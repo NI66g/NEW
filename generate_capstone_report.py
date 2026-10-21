@@ -339,6 +339,29 @@ st.metric(label="成功攔截防損金額", value=f"NT$ {intercepted_loss:,}", d
         prefix="3. 敏感資訊隔離與環境安全："
     )
 
+    doc.add_heading("3.5 軟體工程與 DevOps 版本控制機制 (Git / GitHub 時光機回溯架構)", level=2)
+    doc.add_paragraph(
+        "為因應軟體工程嚴謹規範與防止專案更新反覆迭代時遭遇重大程式崩潰 (Critical Bug)，本專案全面導入 Git 分散式版本控制架構，"
+        "並建置了自動化備份、存檔與一鍵回溯機制，具備以下四大工程價值：",
+        bold_prefix="【版本維運與防崩潰機制】"
+    )
+    doc.add_bullet(
+        "每次功能更新或修復時建立具備時間戳與意圖之 Commit 紀錄，並對穩定里程碑賦予語意化標籤 (如 v1.0.0 Stable)，確保系統演進歷程可溯。",
+        prefix="1. 語意化版本與里程碑標籤："
+    )
+    doc.add_bullet(
+        "若新發布功能出現嚴重瑕疵或死結，管理員可透過「一鍵回溯工具 (Rollback Script)」以秒級速度無損切換回前一個正常發布版本 (HEAD~1 或指定標籤)，徹底消除系統中斷風險。",
+        prefix="2. 重大故障秒級「時光機」回溯："
+    )
+    doc.add_bullet(
+        "嚴格配置 .gitignore 忽略虛擬環境 (.venv)、快取快照 (__pycache__) 及包含金鑰之設定檔，確保敏感認證不外洩至公開開源社群。",
+        prefix="3. 敏感情資安全隔離防護："
+    )
+    doc.add_bullet(
+        "專案可無縫同步推送至 GitHub 雲端版本庫，供評審教授與口試委員公開檢閱軟體工程交付品質與 Issue 管理軌跡，為大學專題卓越評鑑之重要加分項。",
+        prefix="4. 雲端協同與口試評鑑展示："
+    )
+
     doc.add_page_break()
 
     # ==========================================
