@@ -27,7 +27,6 @@ echo.
 echo ========================================================
 echo [完成] 版本存檔成功！近期存檔紀錄如下：
 echo ========================================================
-call "%~dp0git.bat" log -n 5 --pretty=format:"  * [%%h] %%s (%%cr) %%d"
+call "%~dp0git.bat" log -n 5 --oneline
 echo.
-echo.
-pause
+pause

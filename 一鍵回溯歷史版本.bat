@@ -12,7 +12,7 @@ echo.
 echo --------------------------------------------------------
 echo [歷史存檔清單] (最上方為最新版本)：
 echo --------------------------------------------------------
-call "%~dp0git.bat" log -n 10 --pretty=format:"  [%%h] %%s (%%cr) %%d"
+call "%~dp0git.bat" log -n 10 --oneline
 echo.
 echo --------------------------------------------------------
 echo.
@@ -24,39 +24,44 @@ echo   [Q] 取消離開
 echo.
 set /p "choice=請選擇回溯方式 [1/2/3/Q]: "
 
-if /i "%choice%"=="1" (
-    echo.
-    echo 正在重置所有修改回到最新存檔點...
-    call "%~dp0git.bat" restore .
-    call "%~dp0git.bat" clean -fd
-    echo [完成] 已成功清除未存檔的修改，檔案已恢復如初！
-    goto end
-)
+if /i "%choice%"=="1" goto opt1
+if /i "%choice%"=="2" goto opt2
+if /i "%choice%"=="3" goto opt3
+goto optQ
 
-if /i "%choice%"=="2" (
-    echo.
-    echo 正在回溯到上一個穩定版本 (HEAD~1)...
-    call "%~dp0git.bat" reset --hard HEAD~1
-    echo [完成] 已成功回溯至上一個版本！
-    goto end
-)
+:opt1
+echo.
+echo 正在重置所有修改回到最新存檔點...
+call "%~dp0git.bat" restore .
+call "%~dp0git.bat" clean -fd
+echo [完成] 已成功清除未存檔的修改，檔案已恢復如初！
+goto end
 
-if /i "%choice%"=="3" (
-    echo.
-    set /p "target_hash=請輸入欲回溯的 Commit 雜湊碼 (前 7 碼) 或標籤 (如 v1.0.0): "
-    if not "%target_hash%"=="" (
-        echo 正在回溯至 %target_hash% ...
-        call "%~dp0git.bat" reset --hard %target_hash%
-        echo [完成] 已成功回溯至指定的版本 [%target_hash%]！
-    )
-    goto end
-)
+:opt2
+echo.
+echo 正在回溯到上一個穩定版本 (HEAD~1)...
+call "%~dp0git.bat" reset --hard HEAD~1
+echo [完成] 已成功回溯至上一個版本！
+goto end
 
+:opt3
+echo.
+set /p "target_hash=請輸入欲回溯的 Commit 雜湊碼 (前 7 碼) 或標籤 (如 v1.0.0): "
+if "%target_hash%"=="" goto optQ
+echo.
+echo 正在回溯至指定版本...
+call "%~dp0git.bat" reset --hard %target_hash%
+echo [完成] 已成功回溯至指定的版本！
+goto end
+
+:optQ
+echo.
 echo 取消回溯操作。
+goto end
 
 :end
 echo.
 echo 當前專案最新版本狀態：
-call "%~dp0git.bat" log -n 1 --oneline --decorate
+call "%~dp0git.bat" log -n 1 --oneline
 echo.
-pause
+pause

@@ -22,15 +22,18 @@ echo --------------------------------------------------------
 echo.
 set /p "repo_url=步驟二：請貼上您的 GitHub 儲存庫 HTTPS 網址: "
 
-if "%repo_url%"=="" (
-    echo.
-    echo [提示] 尚未輸入網址，已取消操作。
-    echo 隨時可再次點擊此工具重新輸入！
-    echo.
-    pause
-    exit /b
-)
+if "%repo_url%"=="" goto no_url
+goto do_push
 
+:no_url
+echo.
+echo [提示] 尚未輸入網址，已取消操作。
+echo 隨時可再次點擊此工具重新輸入！
+echo.
+pause
+exit /b
+
+:do_push
 echo.
 echo [1/3] 正在設定遠端連線目標 origin...
 call "%~dp0git.bat" remote remove origin 2>nul
@@ -49,4 +52,4 @@ echo [完成] 若上方顯示 Everything up-to-date 或進度 100%%，
 echo        代表已成功同步至 GitHub！請至網頁重新整理檢視成果。
 echo ========================================================
 echo.
-pause
+pause
