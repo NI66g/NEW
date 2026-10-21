@@ -1,0 +1,32 @@
+# ==========================================
+# 電腦周邊智慧售後風控平台 · Git 忽略檔案設定
+# ==========================================
+
+# Python 編譯暫存快取
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Python 虛擬環境 (體積巨大，應由 requirements.txt 重建)
+.venv/
+venv/
+env/
+
+# 本地綠色版 Git 工具包 (不重複上傳至版本庫)
+portable_git/
+*.zip
+
+# 敏感金鑰與隱私憑證 (防止發信密碼公開於 GitHub)
+email_config.json
+
+# 作業系統暫存檔
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 編輯器暫存
+.vscode/
+.idea/
+*.swp
+*.tmp
