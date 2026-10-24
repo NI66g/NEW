@@ -64,22 +64,35 @@ DARK_CSS = """
         overflow-x: hidden !important;
         border: none !important;
     }
-    /* 隱藏 sidebar 展開/收合按鈕，讓側邊欄固定常駐 */
-    /* 隱藏收合觸發按鈕（sidebar 左上角的 < > 箭頭） */
+    /* ========================================================
+       強制 Sidebar 永遠展開 - 使用 transform 覆蓋
+       ======================================================== */
+    /* 強制 sidebar 本體永遠顯示（覆蓋 Streamlit 的 translateX 收合） */
+    section[data-testid="stSidebar"],
+    [data-testid="stSidebar"] {
+        transform: none !important;
+        -webkit-transform: none !important;
+        min-width: 244px !important;
+        width: 244px !important;
+        margin-left: 0 !important;
+        left: 0 !important;
+        visibility: visible !important;
+        display: flex !important;
+        opacity: 1 !important;
+        flex-shrink: 0 !important;
+        position: relative !important;
+        pointer-events: all !important;
+        transition: none !important;
+    }
+    /* 隱藏 sidebar 內部的「收合」按鈕（讓使用者無法關掉 sidebar） */
     [data-testid="stSidebarCollapseButton"] {
         display: none !important;
         visibility: hidden !important;
     }
-    /* 隱藏左側邊緣的展開按鈕（sidebar 已收合時顯示的 > 箭頭） */
+    /* 隱藏主畫面左緣的「展開」小箭頭（sidebar 永遠展開故不需要） */
     [data-testid="collapsedControl"] {
         display: none !important;
         visibility: hidden !important;
-    }
-    /* 鎖定 sidebar 寬度固定，不允許使用者調整 */
-    [data-testid="stSidebar"] {
-        min-width: 260px !important;
-        max-width: 320px !important;
-        pointer-events: all !important;
     }
 
     /* 全域科技感微光漸層背景與微網格 */
@@ -875,22 +888,35 @@ LIGHT_CSS = """
         overflow-x: hidden !important;
         border: none !important;
     }
-    /* 隱藏 sidebar 展開/收合按鈕，讓側邊欄固定常駐 */
-    /* 隱藏收合觸發按鈕（sidebar 左上角的 < > 箭頭） */
+    /* ========================================================
+       強制 Sidebar 永遠展開 - 使用 transform 覆蓋
+       ======================================================== */
+    /* 強制 sidebar 本體永遠顯示（覆蓋 Streamlit 的 translateX 收合） */
+    section[data-testid="stSidebar"],
+    [data-testid="stSidebar"] {
+        transform: none !important;
+        -webkit-transform: none !important;
+        min-width: 244px !important;
+        width: 244px !important;
+        margin-left: 0 !important;
+        left: 0 !important;
+        visibility: visible !important;
+        display: flex !important;
+        opacity: 1 !important;
+        flex-shrink: 0 !important;
+        position: relative !important;
+        pointer-events: all !important;
+        transition: none !important;
+    }
+    /* 隱藏 sidebar 內部的「收合」按鈕（讓使用者無法關掉 sidebar） */
     [data-testid="stSidebarCollapseButton"] {
         display: none !important;
         visibility: hidden !important;
     }
-    /* 隱藏左側邊緣的展開按鈕（sidebar 已收合時顯示的 > 箭頭） */
+    /* 隱藏主畫面左緣的「展開」小箭頭（sidebar 永遠展開故不需要） */
     [data-testid="collapsedControl"] {
         display: none !important;
         visibility: hidden !important;
-    }
-    /* 鎖定 sidebar 寬度固定，不允許使用者調整 */
-    [data-testid="stSidebar"] {
-        min-width: 260px !important;
-        max-width: 320px !important;
-        pointer-events: all !important;
     }
 
 
@@ -1645,6 +1671,44 @@ LIGHT_CSS = """
 
 # 動態注入深色或淺色樣式
 st.markdown(DARK_CSS if is_dark else LIGHT_CSS, unsafe_allow_html=True)
+
+# 強制側邊欄永遠展開 (JavaScript 注入防止收合)
+st.markdown("""
+<script>
+(function() {
+    'use strict';
+    var _forceOpen = function() {
+        var btn = document.querySelector('[data-testid="collapsedControl"] button');
+        if (!btn) btn = document.querySelector('[data-testid="collapsedControl"]');
+        if (btn) { btn.click(); return true; }
+        return false;
+    };
+    var _fixTransform = function() {
+        var sidebar = document.querySelector('section[data-testid="stSidebar"]');
+        if (sidebar) {
+            sidebar.style.setProperty('transform', 'none', 'important');
+            sidebar.style.setProperty('visibility', 'visible', 'important');
+            sidebar.style.setProperty('opacity', '1', 'important');
+            sidebar.style.setProperty('min-width', '244px', 'important');
+            sidebar.style.setProperty('width', '244px', 'important');
+            sidebar.style.setProperty('display', 'flex', 'important');
+        }
+    };
+    setTimeout(_fixTransform, 200);
+    setTimeout(_fixTransform, 600);
+    setTimeout(_fixTransform, 1200);
+    setTimeout(_forceOpen, 300);
+    setTimeout(_forceOpen, 700);
+    if (window.MutationObserver) {
+        var _obs = new MutationObserver(function() { _fixTransform(); });
+        setTimeout(function() {
+            _obs.observe(document.body, {attributes: true, subtree: true, attributeFilter: ['style','class']});
+        }, 500);
+    }
+})();
+</script>
+""", unsafe_allow_html=True)
+
 
 # 電腦周邊受檢類別清單（嚴格限定：鍵盤、滑鼠、耳機）
 PERIPHERAL_CATEGORIES = [
