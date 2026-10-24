@@ -46,6 +46,14 @@ is_dark = ("深色" in st.session_state.get("app_theme_choice", "🌙 深色"))
 # ==========================================
 DARK_CSS = """
 <style>
+    /* 徹底隱藏 Streamlit 預設頁首、頁尾與浮水印橫條 */
+    #MainMenu {visibility: hidden !important; display: none !important;}
+    footer {visibility: hidden !important; display: none !important;}
+    header {visibility: hidden !important; display: none !important;}
+    [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
+    [data-testid="stStatusWidget"] {display: none !important;}
+    .viewerBadge_container__r5tak, .viewerBadge_link__1SuqQ {display: none !important;}
+
     /* 全域科技感微光漸層背景與微網格 */
     .stApp {
         background: 
@@ -821,6 +829,14 @@ DARK_CSS = """
 # ==========================================
 LIGHT_CSS = """
 <style>
+    /* 徹底隱藏 Streamlit 預設頁首、頁尾與浮水印橫條 */
+    #MainMenu {visibility: hidden !important; display: none !important;}
+    footer {visibility: hidden !important; display: none !important;}
+    header {visibility: hidden !important; display: none !important;}
+    [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
+    [data-testid="stStatusWidget"] {display: none !important;}
+    .viewerBadge_container__r5tak, .viewerBadge_link__1SuqQ {display: none !important;}
+
     /* 全域清爽亮麗漸層背景與微網格 */
     .stApp {
         background: 
