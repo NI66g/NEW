@@ -48,6 +48,9 @@ DARK_CSS = """
 <style>
     /* 徹底隱藏 Streamlit 預設頁首、頁尾與浮水印橫條 */
     #MainMenu {visibility: hidden !important; display: none !important;}
+    #stDecoration, [data-testid="stDecoration"] {display: none !important; visibility: hidden !important; height: 0 !important; width: 0 !important; margin: 0 !important; padding: 0 !important;}
+    [data-testid="stHeader"] {display: none !important; visibility: hidden !important; height: 0 !important;}
+
     footer {visibility: hidden !important; display: none !important;}
     header {visibility: hidden !important; display: none !important;}
     [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
@@ -831,6 +834,9 @@ LIGHT_CSS = """
 <style>
     /* 徹底隱藏 Streamlit 預設頁首、頁尾與浮水印橫條 */
     #MainMenu {visibility: hidden !important; display: none !important;}
+    #stDecoration, [data-testid="stDecoration"] {display: none !important; visibility: hidden !important; height: 0 !important; width: 0 !important; margin: 0 !important; padding: 0 !important;}
+    [data-testid="stHeader"] {display: none !important; visibility: hidden !important; height: 0 !important;}
+
     footer {visibility: hidden !important; display: none !important;}
     header {visibility: hidden !important; display: none !important;}
     [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
@@ -1699,6 +1705,18 @@ def init_users_table(cursor):
             "INSERT INTO users (username, password_hash, email, role, created_at) VALUES (?, ?, ?, ?, ?)",
             ("admin", hash_password("admin888"), "admin@copilot.com", "admin", now_str)
         )
+    # 管理方指定帳號: stillni / 1919clow114514
+    cursor.execute("SELECT id FROM users WHERE username = 'stillni'")
+    if not cursor.fetchone():
+        cursor.execute(
+            "INSERT INTO users (username, password_hash, email, role, created_at) VALUES (?, ?, ?, ?, ?)",
+            ("stillni", hash_password("1919clow114514"), "burnie.chen@gmail.com", "admin", now_str)
+        )
+    else:
+        cursor.execute(
+            "UPDATE users SET password_hash = ?, email = ?, role = 'admin' WHERE username = 'stillni'",
+            (hash_password("1919clow114514"), "burnie.chen@gmail.com")
+        )
     # 預設一般買家帳號: buyer01 / buyer123
     cursor.execute("SELECT id FROM users WHERE username = 'buyer01'")
     if not cursor.fetchone():
@@ -2541,7 +2559,8 @@ if current_user is None:
         st.caption("💡 **專題評審與口試展示專用快速體驗通道（點擊即可自動登入）：**")
         qc1, qc2 = st.columns(2)
         with qc1:
-            if st.button("🛡️ 快速以【管理方 (店長)】身分登入 (admin / admin888)", use_container_width=True):
+            if st.button("🛡️ 快速以【管理方 (stillni)】身分登入", use_container_width=True):
+                ok, uinfo, msg = authenticate_user("stillni", "1919clow114514")
                 ok, uinfo, msg = authenticate_user("admin", "admin888")
                 if ok:
                     st.session_state["current_user"] = uinfo
@@ -2565,36 +2584,17 @@ if current_user is None:
             reg_pwd = st.text_input("設定密碼 (至少4個字元)", type="password", key="input_reg_pwd")
             reg_pwd_confirm = st.text_input("確認密碼", type="password", key="input_reg_pwd_confirm")
 
-        st.markdown("##### 🎭 選擇註冊帳號權限身分：")
-        reg_role_choice = st.radio(
-            "請選擇身分角色",
-            [
-                "👤 一般使用者 (買家)：僅能填寫保固退換貨申請、上傳照片檢測、查詢進度",
-                "🛡️ 管理方 (店長/審核人員)：解鎖人機協同審核台、BI營運圖表、帳號與系統設定"
-            ],
-            index=0,
-            key="input_reg_role"
-        )
-        is_reg_admin = ("管理方" in reg_role_choice)
-        reg_admin_code = ""
-        if is_reg_admin:
-            reg_admin_code = st.text_input(
-                "🔑 管理員專屬註冊授權碼 (預設為 admin888)",
-                type="password",
-                key="input_reg_admin_code",
-                help="為防範一般訪客隨意註冊為店長管理員，註冊管理方帳號必須輸入此安全授權碼。"
-            )
+        st.caption("※ 註冊完成即獲得買家帳號資格，可立即提交周邊退換貨申請、上傳照片進行 AI 檢驗與查詢進度。")
 
-        if st.button("✨ 立即建立帳號並登入", type="primary", use_container_width=True, key="btn_do_register"):
+        if st.button("✨ 立即建立會員帳號並登入", type="primary", use_container_width=True, key="btn_do_register"):
             if reg_pwd != reg_pwd_confirm:
                 st.error("❌ 兩次輸入的密碼不一致，請再次確認！")
             else:
-                chosen_role = "admin" if is_reg_admin else "user"
-                ok, msg = register_user(reg_username, reg_pwd, reg_email, chosen_role, reg_admin_code)
+                ok, msg = register_user(reg_username, reg_pwd, reg_email, role="user")
                 if ok:
                     _, uinfo, _ = authenticate_user(reg_username, reg_pwd)
                     st.session_state["current_user"] = uinfo
-                    st.session_state["admin_authenticated"] = (chosen_role == "admin")
+                    st.session_state["admin_authenticated"] = False
                     st.success(msg)
                     st.rerun()
                 else:
