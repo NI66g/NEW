@@ -64,14 +64,22 @@ DARK_CSS = """
         overflow-x: hidden !important;
         border: none !important;
     }
-    /* 隱藏 sidebar 摺疊/展開按鈕，讓側邊欄永遠固定 */
-    [data-testid="stSidebarCollapseButton"],
-    [data-testid="collapsedControl"],
-    button[data-testid="baseButton-headerNoPadding"],
-    [data-testid="stSidebar"] > div:first-child > div > button {
+    /* 隱藏 sidebar 展開/收合按鈕，讓側邊欄固定常駐 */
+    /* 隱藏收合觸發按鈕（sidebar 左上角的 < > 箭頭） */
+    [data-testid="stSidebarCollapseButton"] {
         display: none !important;
         visibility: hidden !important;
-        pointer-events: none !important;
+    }
+    /* 隱藏左側邊緣的展開按鈕（sidebar 已收合時顯示的 > 箭頭） */
+    [data-testid="collapsedControl"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    /* 鎖定 sidebar 寬度固定，不允許使用者調整 */
+    [data-testid="stSidebar"] {
+        min-width: 260px !important;
+        max-width: 320px !important;
+        pointer-events: all !important;
     }
 
     /* 全域科技感微光漸層背景與微網格 */
@@ -867,14 +875,22 @@ LIGHT_CSS = """
         overflow-x: hidden !important;
         border: none !important;
     }
-    /* 隱藏 sidebar 摺疊/展開按鈕，讓側邊欄永遠固定 */
-    [data-testid="stSidebarCollapseButton"],
-    [data-testid="collapsedControl"],
-    button[data-testid="baseButton-headerNoPadding"],
-    [data-testid="stSidebar"] > div:first-child > div > button {
+    /* 隱藏 sidebar 展開/收合按鈕，讓側邊欄固定常駐 */
+    /* 隱藏收合觸發按鈕（sidebar 左上角的 < > 箭頭） */
+    [data-testid="stSidebarCollapseButton"] {
         display: none !important;
         visibility: hidden !important;
-        pointer-events: none !important;
+    }
+    /* 隱藏左側邊緣的展開按鈕（sidebar 已收合時顯示的 > 箭頭） */
+    [data-testid="collapsedControl"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    /* 鎖定 sidebar 寬度固定，不允許使用者調整 */
+    [data-testid="stSidebar"] {
+        min-width: 260px !important;
+        max-width: 320px !important;
+        pointer-events: all !important;
     }
 
 
@@ -2598,7 +2614,8 @@ if current_user is None:
         with qc1:
             if st.button("🛡️ 快速以【管理方 (stillni)】身分登入", use_container_width=True):
                 ok, uinfo, msg = authenticate_user("stillni", "1919clow114514")
-                ok, uinfo, msg = authenticate_user("admin", "admin888")
+                if not ok:
+                    ok, uinfo, msg = authenticate_user("admin", "admin888")
                 if ok:
                     st.session_state["current_user"] = uinfo
                     st.session_state["admin_authenticated"] = True
