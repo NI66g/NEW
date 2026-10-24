@@ -1653,6 +1653,148 @@ def save_admin_config(admin_password=None, gemini_api_key=None, gemini_model_nam
         st.error(f"儲存管理員設定失敗: {str(e)}")
     return cfg
 
+
+# ==========================================
+# 0.3 會員與角色權限認證系統 (SQLite users)
+# ==========================================
+import hashlib
+
+def hash_password(password: str) -> str:
+    """密碼 SHA-256 安全雜湊運算"""
+    return hashlib.sha256(password.strip().encode("utf-8")).hexdigest()
+
+def init_users_table(cursor):
+    """初始化 users 帳號資料表並預設植入管理方與買家示範帳號"""
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            email TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'user',
+            created_at TEXT NOT NULL
+        )
+    """)
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # 預設平台管理員: admin / admin888
+    cursor.execute("SELECT id FROM users WHERE username = 'admin'")
+    if not cursor.fetchone():
+        cursor.execute(
+            "INSERT INTO users (username, password_hash, email, role, created_at) VALUES (?, ?, ?, ?, ?)",
+            ("admin", hash_password("admin888"), "admin@copilot.com", "admin", now_str)
+        )
+    # 預設一般買家帳號: buyer01 / buyer123
+    cursor.execute("SELECT id FROM users WHERE username = 'buyer01'")
+    if not cursor.fetchone():
+        cursor.execute(
+            "INSERT INTO users (username, password_hash, email, role, created_at) VALUES (?, ?, ?, ?, ?)",
+            ("buyer01", hash_password("buyer123"), "buyer01@gmail.com", "user", now_str)
+        )
+
+def register_user(username, password, email, role="user", admin_code=""):
+    """新使用者註冊"""
+    username = username.strip()
+    email = email.strip()
+    if not username:
+        return False, "❌ 請輸入使用者帳號！"
+    if len(username) < 3:
+        return False, "❌ 帳號長度至少需 3 個字元！"
+    if not password or len(password) < 4:
+        return False, "❌ 密碼長度至少需 4 個字元！"
+    if not email or "@" not in email:
+        return False, "❌ 請輸入有效的電子郵件信箱！"
+
+    # 若申請管理方權限，需驗證管理員授權碼
+    if role == "admin":
+        correct_admin_code = load_admin_config().get("admin_password", "admin888")
+        if admin_code.strip() != correct_admin_code:
+            return False, "❌ 管理員註冊授權碼錯誤！無法註冊為管理方身份。"
+
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT id FROM users WHERE username = ?", (username,))
+    if c.fetchone():
+        conn.close()
+        return False, f"❌ 帳號「{username}」已被註冊，請更換其他帳號名稱！"
+
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    c.execute(
+        "INSERT INTO users (username, password_hash, email, role, created_at) VALUES (?, ?, ?, ?, ?)",
+        (username, hash_password(password), email, role, now_str)
+    )
+    conn.commit()
+    conn.close()
+    role_label = "🛡️ 平台管理員 (店長)" if role == "admin" else "👤 一般使用者 (買家)"
+    return True, f"🎉 註冊成功！您已獲得【{role_label}】身份，請使用新帳號登入系統。"
+
+def authenticate_user(username, password):
+    """會員登入驗證"""
+    username = username.strip()
+    if not username or not password:
+        return False, None, "❌ 請輸入帳號與密碼！"
+
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT id, username, password_hash, email, role, created_at FROM users WHERE username = ?", (username,))
+    row = c.fetchone()
+    conn.close()
+    if not row:
+        return False, None, "❌ 帳號不存在，請先切換至「📝 註冊新帳號」進行註冊！"
+    if row[2] != hash_password(password):
+        return False, None, "❌ 密碼錯誤，請重新確認！"
+
+    user_info = {
+        "id": row[0],
+        "username": row[1],
+        "email": row[3],
+        "role": row[4],
+        "created_at": row[5]
+    }
+    return True, user_info, "✅ 登入成功！"
+
+def get_all_users():
+    """查詢所有註冊會員清單"""
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT id, username, email, role, created_at FROM users ORDER BY id ASC")
+    rows = c.fetchall()
+    conn.close()
+    return rows
+
+def delete_user(user_id):
+    """刪除指定帳號 (不允許刪除原始 admin)"""
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT username FROM users WHERE id = ?", (user_id,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return False, "❌ 找不到指定帳號！"
+    if row[0] == "admin":
+        conn.close()
+        return False, "❌ 系統預設根管理員 (admin) 不可刪除！"
+    c.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+    return True, f"✅ 已成功刪除帳號「{row[0]}」！"
+
+def update_user_role(user_id, new_role):
+    """變更使用者身份權限"""
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("SELECT username FROM users WHERE id = ?", (user_id,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return False, "❌ 找不到指定帳號！"
+    if row[0] == "admin" and new_role != "admin":
+        conn.close()
+        return False, "❌ 系統預設根管理員 (admin) 權限不可降級！"
+    c.execute("UPDATE users SET role = ? WHERE id = ?", (new_role, user_id))
+    conn.commit()
+    conn.close()
+    return True, f"✅ 已成功將「{row[0]}」身份變更為【{new_role}】！"
+
 # ==========================================
 # 1. 資料庫初始化與資料遷移 (SQLite)
 # ==========================================
@@ -1720,13 +1862,18 @@ def init_db():
         "repair_date TEXT DEFAULT ''",
         "technician_id TEXT DEFAULT ''",
         "repair_status TEXT DEFAULT ''",
-        "images_json TEXT DEFAULT ''"
+        "images_json TEXT DEFAULT ''",
+        "username TEXT DEFAULT ''"
     ]:
         try:
             c.execute(f"ALTER TABLE return_requests ADD COLUMN {col_def}")
             conn.commit()
         except sqlite3.OperationalError:
             pass
+
+    # 初始化 users 帳號資料表
+    init_users_table(c)
+    conn.commit()
 
     # 為歷史舊資料補上預設展示用電子郵件
     c.execute("UPDATE return_requests SET customer_email = 'buyer_sample@example.com' WHERE customer_email IS NULL OR customer_email = ''")
@@ -2300,12 +2447,12 @@ def analyze_return_request(category, product_name, reason, image_file, api_key="
         )
 
 # ==========================================
-# 3. 系統側邊欄導航 (方案 A：統一門戶與管理員密碼鎖)
+# 3. 會員帳號驗證與系統側邊欄導航 (帳號登入制)
 # ==========================================
-if "admin_authenticated" not in st.session_state:
-    st.session_state["admin_authenticated"] = False
+if "current_user" not in st.session_state:
+    st.session_state["current_user"] = None
 
-is_admin = st.session_state["admin_authenticated"]
+current_user = st.session_state.get("current_user")
 
 # 側邊欄最頂部：深色/淺色主題風格即時切換
 st.sidebar.radio(
@@ -2316,11 +2463,141 @@ st.sidebar.radio(
 )
 st.sidebar.markdown("---")
 
-if not is_admin:
+if current_user is None:
+    # 未登入狀態：側邊欄提示
     st.sidebar.markdown("""
     <div class="sidebar-header-box">
+        <div class="sidebar-title">🛡️ Peripheral Copilot</div>
+        <div class="sidebar-subtitle">● 會員權限驗證中心 (Auth Gateway)</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.sidebar.info("""
+    **👋 歡迎蒞臨電腦周邊售後與風控平台！**
+    
+    本系統已全面升級為**「會員帳號登入制」**：
+    - 👤 **一般使用者 (買家)**：提交保固維修與退貨申請、上傳照片 AI 檢測、隨時追蹤個人案件進度。
+    - 🛡️ **管理方 (店長/審核)**：具備人機協同審查 (HITL)、Google Gemini 3.8 Flash 風控研判、BI 營運儀表板與帳號權限管理。
+
+    👉 請由主畫面【登入】或【註冊】新帳號以進入系統。
+    """)
+    st.sidebar.caption("📧 系統客服信箱：zhuant610@gmail.com")
+
+    # 主畫面呈現：精緻的登入與註冊整合門戶
+    st.markdown("""
+    <div class="tech-hero">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div>
+                <div class="hero-title">🛡️ 電腦周邊智慧售後退換貨與爭議風控平台</div>
+                <div class="hero-subtitle">
+                    基於 Google Gemini 3.8 Flash 多模態 AI · 鍵盤／滑鼠／耳機人機協同審核決策系統
+                </div>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <span class="badge-item">🔐 帳號登入制</span>
+                <span class="badge-item">⚡ 角色分流權限</span>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    auth_tab_login, auth_tab_register = st.tabs(["🔑 會員登入 (Sign In)", "📝 註冊新帳號 (Sign Up)"])
+
+    with auth_tab_login:
+        st.markdown("#### 🔑 請輸入帳號密碼登入系統：")
+        col_l1, col_l2 = st.columns([1, 1])
+        with col_l1:
+            login_user = st.text_input("帳號 (Username)", key="input_login_username", placeholder="例如: admin 或 buyer01")
+        with col_l2:
+            login_pwd = st.text_input("密碼 (Password)", type="password", key="input_login_password", placeholder="請輸入密碼")
+
+        if st.button("🚀 登入系統", type="primary", use_container_width=True, key="btn_do_login"):
+            ok, uinfo, msg = authenticate_user(login_user, login_pwd)
+            if ok:
+                st.session_state["current_user"] = uinfo
+                st.session_state["admin_authenticated"] = (uinfo["role"] == "admin")
+                st.success(f"{msg} 歡迎回來，【{uinfo['username']}】！")
+                st.rerun()
+            else:
+                st.error(msg)
+
+        st.markdown("---")
+        st.caption("💡 **專題評審與口試展示專用快速體驗通道（點擊即可自動登入）：**")
+        qc1, qc2 = st.columns(2)
+        with qc1:
+            if st.button("🛡️ 快速以【管理方 (店長)】身分登入 (admin / admin888)", use_container_width=True):
+                ok, uinfo, msg = authenticate_user("admin", "admin888")
+                if ok:
+                    st.session_state["current_user"] = uinfo
+                    st.session_state["admin_authenticated"] = True
+                    st.rerun()
+        with qc2:
+            if st.button("👤 快速以【一般使用者 (買家)】身分登入 (buyer01 / buyer123)", use_container_width=True):
+                ok, uinfo, msg = authenticate_user("buyer01", "buyer123")
+                if ok:
+                    st.session_state["current_user"] = uinfo
+                    st.session_state["admin_authenticated"] = False
+                    st.rerun()
+
+    with auth_tab_register:
+        st.markdown("#### 📝 填寫資料建立新會員帳號：")
+        rc1, rc2 = st.columns(2)
+        with rc1:
+            reg_username = st.text_input("設定帳號 (至少3個字元)", key="input_reg_username", placeholder="例如: my_username")
+            reg_email = st.text_input("通知電子信箱 (接收審核結果通知)", key="input_reg_email", placeholder="例如: yourname@gmail.com")
+        with rc2:
+            reg_pwd = st.text_input("設定密碼 (至少4個字元)", type="password", key="input_reg_pwd")
+            reg_pwd_confirm = st.text_input("確認密碼", type="password", key="input_reg_pwd_confirm")
+
+        st.markdown("##### 🎭 選擇註冊帳號權限身分：")
+        reg_role_choice = st.radio(
+            "請選擇身分角色",
+            [
+                "👤 一般使用者 (買家)：僅能填寫保固退換貨申請、上傳照片檢測、查詢進度",
+                "🛡️ 管理方 (店長/審核人員)：解鎖人機協同審核台、BI營運圖表、帳號與系統設定"
+            ],
+            index=0,
+            key="input_reg_role"
+        )
+        is_reg_admin = ("管理方" in reg_role_choice)
+        reg_admin_code = ""
+        if is_reg_admin:
+            reg_admin_code = st.text_input(
+                "🔑 管理員專屬註冊授權碼 (預設為 admin888)",
+                type="password",
+                key="input_reg_admin_code",
+                help="為防範一般訪客隨意註冊為店長管理員，註冊管理方帳號必須輸入此安全授權碼。"
+            )
+
+        if st.button("✨ 立即建立帳號並登入", type="primary", use_container_width=True, key="btn_do_register"):
+            if reg_pwd != reg_pwd_confirm:
+                st.error("❌ 兩次輸入的密碼不一致，請再次確認！")
+            else:
+                chosen_role = "admin" if is_reg_admin else "user"
+                ok, msg = register_user(reg_username, reg_pwd, reg_email, chosen_role, reg_admin_code)
+                if ok:
+                    _, uinfo, _ = authenticate_user(reg_username, reg_pwd)
+                    st.session_state["current_user"] = uinfo
+                    st.session_state["admin_authenticated"] = (chosen_role == "admin")
+                    st.success(msg)
+                    st.rerun()
+                else:
+                    st.error(msg)
+
+    st.stop()
+
+# ==========================================
+# 已登入狀態：依照身分角色分流選單與功能
+# ==========================================
+is_admin = (current_user["role"] == "admin")
+st.session_state["admin_authenticated"] = is_admin
+
+if not is_admin:
+    # 一般使用者 (買家) 視圖：僅提供買家前台服務
+    st.sidebar.markdown(f"""
+    <div class="sidebar-header-box">
         <div class="sidebar-title">🛍️ 周邊售後客服中心</div>
-        <div class="sidebar-subtitle">● 買家退換貨服務門戶 (Buyer Portal)</div>
+        <div class="sidebar-subtitle">👤 一般使用者：{current_user['username']}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -2333,18 +2610,6 @@ if not is_admin:
     )
 
     st.sidebar.markdown("---")
-    with st.sidebar.expander("🔐 商家 / 店長後台登入", expanded=False):
-        st.caption("此區域專供賣場店長與管理者進行案件審核及營運數據分析。")
-        admin_pwd_input = st.text_input("輸入管理員密碼", type="password", key="sidebar_admin_pwd", placeholder="預設密碼: admin888")
-        if st.button("🔓 登入管理後台", use_container_width=True, type="primary"):
-            correct_pwd = load_admin_config().get("admin_password", "admin888")
-            if admin_pwd_input.strip() == correct_pwd:
-                st.session_state["admin_authenticated"] = True
-                st.success("✅ 登入成功！已解除管理員權限。")
-                st.rerun()
-            else:
-                st.error("❌ 密碼錯誤，請重新輸入！")
-
     st.sidebar.info("""
     **🎯 受理電腦周邊範圍：**
     - ⌨️ **機械/薄膜鍵盤** (軸體/鍵位/PCB)
@@ -2354,16 +2619,15 @@ if not is_admin:
     **📋 買家售後須知：**
     1. 購買 7 日內商品享新品不良免費換新/退款服務。
     2. 申請時【必須上傳瑕疵佐證照片】，未附照片恕無法受理申請。
-    3. 請務必填寫正確的電子信箱，審核判決將自動寄發通知信。
-    4. 若收到「要求補件」通知，可隨時至「查詢進度」補傳照片。
+    3. 審核判決將自動寄發通知信至您的註冊信箱。
     """)
-    st.sidebar.caption("📧 售後服務信箱：zhuant610@gmail.com")
 
 else:
-    st.sidebar.markdown("""
+    # 管理方 (店長/老闆) 視圖：完整解鎖管理功能
+    st.sidebar.markdown(f"""
     <div class="sidebar-header-box">
         <div class="sidebar-title">🛡️ Peripheral Copilot</div>
-        <div class="sidebar-subtitle-admin">🟢 管理員已登入 (店長/老闆)</div>
+        <div class="sidebar-subtitle-admin">🟢 管理員已登入：{current_user['username']}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -2372,6 +2636,7 @@ else:
         [
             "🧑‍💼 店長：人機對照審核台",
             "📊 老闆：BI 營運成效儀表板",
+            "👥 帳號清單與權限管理",
             "⚙️ 系統設定 & API",
             "📝 買家：提交退換貨申請",
             "🔍 買家：查詢進度 / 補充照片"
@@ -2379,29 +2644,41 @@ else:
     )
 
     st.sidebar.markdown("---")
-    if st.sidebar.button("🚪 登出管理員後台", use_container_width=True):
-        st.session_state["admin_authenticated"] = False
-        st.rerun()
-
     st.sidebar.info("""
     **🎯 檢測對象聚焦：**
     - ⌨️ **機械/薄膜鍵盤** (軸體/鍵位/PCB)
     - 🖱️ **滑鼠** (微動/編碼器/感應器)
     - 🎧 **耳機** (單元/頭樑/收音)
-
-    ---
-    💡 **全整合架構 (方案 A)**：
-    前台買家申訴與後台審核台共用同一即時資料庫 (`disputes.db`)。買家提交申訴後，店長審核台零延遲即時呈現！
     """)
 
-# 安全性防護：若未登入而嘗試進入管理頁面，自動導向買家前台
-if menu in ["🧑‍💼 店長：人機對照審核台", "📊 老闆：BI 營運成效儀表板", "⚙️ 系統設定 & API"] and not st.session_state.get("admin_authenticated", False):
-    st.warning("⚠️ 該頁面僅限管理員存取，請由左側邊欄輸入密碼登入後台。")
+# 側邊欄底部：帳號資訊與登出按鈕
+st.sidebar.markdown("---")
+if st.sidebar.button(f"🚪 登出系統 ({current_user['username']})", use_container_width=True):
+    st.session_state["current_user"] = None
+    st.session_state["admin_authenticated"] = False
+    st.rerun()
+
+st.sidebar.caption(f"👤 當前帳號：{current_user['username']} ({'管理方' if is_admin else '買家'})")
+
+# 安全防護：非管理員嘗試存取管理後台頁面時自動導向
+if menu in ["🧑‍💼 店長：人機對照審核台", "📊 老闆：BI 營運成效儀表板", "👥 帳號清單與權限管理", "⚙️ 系統設定 & API"] and not is_admin:
+    st.warning("⚠️ 該頁面僅限管理方存取，已自動導向買家服務門戶。")
     menu = "📝 買家：提交退換貨申請"
 
-# ==========================================
-# 買家門戶 模組一：提交退換貨申請 (Buyer Submission)
-# ==========================================
+# 主畫面頂端常駐登入者狀態標籤列
+user_pill_color = "#38bdf8" if is_admin else "#10b981"
+user_role_tag = "👑 平台管理員 (店長/審核方)" if is_admin else "👤 一般使用者 (買家)"
+st.markdown(f"""
+<div style="background: rgba(30, 41, 59, 0.45); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; padding: 6px 14px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+    <div style="font-size: 13px; color: #cbd5e1;">
+        當前登入者：<b style="color: #fff;">{current_user['username']}</b> ｜ 權限：<span style="color: {user_pill_color}; font-weight: 600;">{user_role_tag}</span> ｜ 信箱：<code>{current_user['email']}</code>
+    </div>
+    <div style="font-size: 12px; color: #94a3b8;">
+        ✅ 身分驗證已通過
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
 if menu == "📝 買家：提交退換貨申請":
     st.markdown("""
     <div class="tech-hero">
@@ -2429,7 +2706,8 @@ if menu == "📝 買家：提交退換貨申請":
     with col1:
         st.markdown("#### 📝 填寫申訴資訊")
         order_id = st.text_input("訂單編號", value=f"ORD-PERI-{datetime.now().strftime('%m%d%H%M')}")
-        customer_email = st.text_input("買家電子信箱 (Email) *必填，接收審核判決通知", placeholder="例如：buyer@example.com")
+        default_email = current_user.get("email", "") if current_user else ""
+        customer_email = st.text_input("買家電子信箱 (Email) *必填，接收審核判決通知", value=default_email, placeholder="例如：buyer@example.com")
         category = st.selectbox("周邊商品類別 (僅限電腦周邊)", PERIPHERAL_CATEGORIES)
         
         # 依據所選周邊顯示專屬檢驗指引
@@ -2546,11 +2824,12 @@ if menu == "📝 買家：提交退換貨申請":
                     conn = sqlite3.connect(DB_FILE)
                     c = conn.cursor()
                     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    c_uname = current_user.get("username", "") if current_user else ""
                     c.execute("""
                         INSERT INTO return_requests 
-                        (order_id, customer_email, product_category, product_name, customer_reason, image_data, images_json, status, risk_level, risk_score, ai_verdict, ai_evidence, ai_recommendation, created_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, '待審核', ?, ?, ?, ?, ?, ?)
-                    """, (order_id, customer_email.strip(), category, product_name, reason, primary_blob, images_json_str, risk_lvl, risk_score, verdict, evidence, rec, now_str))
+                        (order_id, customer_email, product_category, product_name, customer_reason, image_data, images_json, status, risk_level, risk_score, ai_verdict, ai_evidence, ai_recommendation, created_at, username)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, '待審核', ?, ?, ?, ?, ?, ?, ?)
+                    """, (order_id, customer_email.strip(), category, product_name, reason, primary_blob, images_json_str, risk_lvl, risk_score, verdict, evidence, rec, now_str, c_uname))
                     conn.commit()
                     conn.close()
 
@@ -3088,6 +3367,79 @@ elif menu == "📊 老闆：BI 營運成效儀表板":
 # ==========================================
 # 模組四：系統設定與 API 串接
 # ==========================================
+# ==========================================
+# 模組：系統註冊帳號與角色權限管理 (管理方專用)
+# ==========================================
+elif menu == "👥 帳號清單與權限管理":
+    st.markdown("""
+    <div class="tech-hero">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div>
+                <div class="hero-title">👥 系統註冊會員與角色權限管理</div>
+                <div class="hero-subtitle">
+                    即時檢視 SQLite <code>users</code> 資料表，管理買家與店長之角色權限
+                </div>
+            </div>
+            <div>
+                <span class="badge-item">👑 管理方專屬模組</span>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    all_users = get_all_users()
+    total_u = len(all_users)
+    admin_u = len([u for u in all_users if u[3] == "admin"])
+    buyer_u = total_u - admin_u
+
+    m1, m2, m3 = st.columns(3)
+    m1.metric("總註冊帳號數", f"{total_u} 位")
+    m2.metric("平台管理員 (店長)", f"{admin_u} 位")
+    m3.metric("一般使用者 (買家)", f"{buyer_u} 位")
+
+    st.markdown("---")
+    st.subheader("📋 會員名冊總覽")
+
+    user_df = pd.DataFrame(all_users, columns=["ID", "帳號 (Username)", "電子信箱", "角色身分", "註冊時間"])
+    user_df["角色身分"] = user_df["角色身分"].apply(lambda r: "👑 管理方 (admin)" if r == "admin" else "👤 使用者 (user)")
+    st.dataframe(user_df, use_container_width=True, hide_index=True)
+
+    st.markdown("---")
+    st.subheader("⚙️ 帳號權限管理與維護")
+    u_col1, u_col2 = st.columns(2)
+    with u_col1:
+        st.markdown("##### 🔄 變更使用者權限身分")
+        user_options = [f"ID:{u[0]} - {u[1]} ({'管理方' if u[3] == 'admin' else '使用者'})" for u in all_users]
+        if user_options:
+            target_user_str = st.selectbox("選擇目標帳號", user_options, key="role_change_select")
+            target_uid = int(target_user_str.split(" - ")[0].replace("ID:", ""))
+            new_role_choice = st.selectbox("設定新身份", ["一般使用者 (user)", "平台管理員 (admin)"], key="role_new_sel")
+            new_role_val = "admin" if "admin" in new_role_choice else "user"
+            if st.button("💾 儲存身分變更", type="primary", key="btn_save_user_role"):
+                ok, msg = update_user_role(target_uid, new_role_val)
+                if ok:
+                    st.success(msg)
+                    st.rerun()
+                else:
+                    st.error(msg)
+
+    with u_col2:
+        st.markdown("##### 🗑️ 刪除測試會員帳號")
+        deletable_users = [u for u in all_users if u[1] != "admin"]
+        if deletable_users:
+            del_options = [f"ID:{u[0]} - {u[1]} ({u[2]})" for u in deletable_users]
+            del_target_str = st.selectbox("選擇欲刪除之帳號", del_options, key="del_user_select")
+            del_uid = int(del_target_str.split(" - ")[0].replace("ID:", ""))
+            if st.button("🚨 確認刪除帳號", type="secondary", key="btn_del_user"):
+                ok, msg = delete_user(del_uid)
+                if ok:
+                    st.success(msg)
+                    st.rerun()
+                else:
+                    st.error(msg)
+        else:
+            st.caption("※ 目前除了根管理員 (admin) 外尚無其他帳號可刪除。")
+
 elif menu == "⚙️ 系統設定 & API":
     st.markdown("""
     <div class="tech-hero">

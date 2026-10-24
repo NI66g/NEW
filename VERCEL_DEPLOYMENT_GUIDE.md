@@ -13,7 +13,7 @@
 2. **完美解法**：
    - **Vercel（前端邊緣門戶）**：負責提供標準 `*.vercel.app` 網址、安全標頭防護與極速秒開的響應式操作介面。
    - **Streamlit Community Cloud（後端 AI 核心）**：免費託管 Python、Gemini 3.8 Flash 運算與 SQLite 審核流。
-   - **GitHub CI/CD 自動連動**：兩者皆直接掛載您的 GitHub 儲存庫（`NI66g/old`），只要一推程式碼，雙平台同時自動更新！
+   - **GitHub CI/CD 自動連動**：兩者皆直接掛載您的 GitHub 儲存庫（`NI66g/NEW`），只要一推程式碼，雙平台同時自動更新！
 
 ---
 
@@ -22,8 +22,8 @@
 ### 步驟一：將最新代碼同步至 GitHub
 我們已經為您配置好了 `index.html` 與 `vercel.json`：
 1. 在專案資料夾點兩下執行 **`一鍵建立版本存檔.bat`**。
-2. 輸入說明（例如：「新增 Vercel 門戶支援」）並按下 Enter。
-3. 腳本會自動將新檔案 Commit 並推送到 GitHub（`NI66g/old`）。
+2. 輸入說明（例如：「升級會員帳號登入制與 Vercel 支援」）並按下 Enter。
+3. 腳本會自動將新檔案 Commit 並推送到 GitHub（`NI66g/NEW`）。
 
 ---
 
@@ -32,12 +32,12 @@
 2. 點選 **「Continue with GitHub」** 登入。
 3. 點擊右上角 **「Create app」** ➜ 選擇 **「I already have an app」**。
 4. 設定專案發布參數：
-   - **Repository**: 選擇 `NI66g/old`
+   - **Repository**: 選擇 `NI66g/NEW`
    - **Branch**: 選擇 `main`
    - **Main file path**: 輸入 `app.py`
-   - **App URL**: 可以自訂喜歡的英文名稱（如 `ni66g-old`）
+   - **App URL**: 可以自訂喜歡的英文名稱（如 `ni66g-new`）
 5. 點擊右下角綠色 **「Deploy!」** 按鈕。
-6. 等待約 1 分鐘完成構建，看到系統成功跑起來後，複製上方的網址（例如：`https://ni66g-old.streamlit.app`）。
+6. 等待約 1 分鐘完成構建，看到系統成功跑起來後，複製上方的網址（例如：`https://ni66g-new.streamlit.app`）。
 
 ---
 
@@ -45,7 +45,7 @@
 1. 開啟瀏覽器前往 **[Vercel (https://vercel.com)](https://vercel.com/)**。
 2. 點選 **「Sign Up」** 或 **「Log In」**，使用 **GitHub 帳號** 快速授權登入。
 3. 登入後在儀表板點選 **「Add New...」** ➜ 選擇 **「Project」**。
-4. 在「Import Git Repository」列表中找到您的專案 **`old`**（即 `NI66g/old`），點擊旁邊的 **「Import」**。
+4. 在「Import Git Repository」列表中找到您的專案 **`NEW`**（即 `NI66g/NEW`），點擊旁邊的 **「Import」**。
 5. 設定頁面：
    - **Framework Preset**: 保持預設的 **`Other`**（系統會自動識別專案根目錄的 `index.html` 與 `vercel.json`）。
    - **Root Directory**: 保持預設 `./` 即可。
