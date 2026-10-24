@@ -42,19 +42,24 @@
       overflow: hidden;
       background-color: var(--bg-dark);
       z-index: 1;
+      margin: 0;
+      padding: 0;
+      border: none;
     }
 
     /* 
-      Iframe Container Optimization:
-      Extends 46px downwards and clips the bottom so Streamlit's white footer badge 
-      ("Built with Streamlit / Fullscreen") is completely pushed outside the visible screen!
+      Seamless Fullscreen Iframe:
+      Overflows all 4 edges so every browser-generated border is clipped away.
+      main's overflow:hidden clips them cleanly.
     */
     iframe {
-      width: 100%;
-      height: calc(100% + 54px);
-      margin-top: -4px;
-      margin-bottom: -50px;
-      border: none !important;
+      position: absolute;
+      top: -6px;
+      left: -8px;
+      width: calc(100vw + 16px);
+      height: calc(100vh + 60px);
+      border: 0 !important;
+      border-width: 0 !important;
       outline: none !important;
       box-shadow: none !important;
       display: block;
@@ -384,6 +389,9 @@
     <iframe
       id="app-frame"
       src=""
+      frameborder="0"
+      marginwidth="0"
+      marginheight="0"
       allow="camera; microphone; clipboard-read; clipboard-write; display-capture"
       loading="eager"
       onload="onFrameLoaded()"

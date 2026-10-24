@@ -57,6 +57,25 @@ DARK_CSS = """
     [data-testid="stStatusWidget"] {display: none !important;}
     .viewerBadge_container__r5tak, .viewerBadge_link__1SuqQ {display: none !important;}
 
+    /* === 徹底消除四周白邊 === */
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow-x: hidden !important;
+        border: none !important;
+    }
+    .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"],
+    .main, section.main, .block-container,
+    [data-testid="block-container"] {
+        margin: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        max-width: 100% !important;
+    }
+
     /* 全域科技感微光漸層背景與微網格 */
     .stApp {
         background: 
@@ -843,6 +862,26 @@ LIGHT_CSS = """
     [data-testid="stStatusWidget"] {display: none !important;}
     .viewerBadge_container__r5tak, .viewerBadge_link__1SuqQ {display: none !important;}
 
+    /* === 徹底消除四周白邊 === */
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow-x: hidden !important;
+        border: none !important;
+    }
+    .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"],
+    .main, section.main, .block-container,
+    [data-testid="block-container"] {
+        margin: 0 !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        max-width: 100% !important;
+    }
+
+
     /* 全域清爽亮麗漸層背景與微網格 */
     .stApp {
         background: 
@@ -880,6 +919,7 @@ LIGHT_CSS = """
     ::placeholder, ::-webkit-input-placeholder, ::-moz-placeholder, :-ms-input-placeholder,
     input::placeholder, textarea::placeholder {
         color: #64748b !important;
+        -webkit-text-fill-color: #64748b !important;
         opacity: 1 !important;
     }
 
@@ -947,6 +987,7 @@ LIGHT_CSS = """
         outline: none !important;
         box-shadow: none !important;
         color: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
         font-size: 14.5px !important;
     }
 
@@ -2684,12 +2725,17 @@ if menu in ["🧑‍💼 店長：人機對照審核台", "📊 老闆：BI 營�
 # 主畫面頂端常駐登入者狀態標籤列
 user_pill_color = "#38bdf8" if is_admin else "#10b981"
 user_role_tag = "👑 平台管理員 (店長/審核方)" if is_admin else "👤 一般使用者 (買家)"
+_banner_bg = "rgba(30, 41, 59, 0.45)" if is_dark else "#ffffff"
+_banner_border = "rgba(148, 163, 184, 0.2)" if is_dark else "#e2e8f0"
+_banner_text = "#cbd5e1" if is_dark else "#334155"
+_banner_name = "#fff" if is_dark else "#0f172a"
+_banner_sub = "#94a3b8" if is_dark else "#64748b"
 st.markdown(f"""
-<div style="background: rgba(30, 41, 59, 0.45); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; padding: 6px 14px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-    <div style="font-size: 13px; color: #cbd5e1;">
-        當前登入者：<b style="color: #fff;">{current_user['username']}</b> ｜ 權限：<span style="color: {user_pill_color}; font-weight: 600;">{user_role_tag}</span> ｜ 信箱：<code>{current_user['email']}</code>
+<div style="background: {_banner_bg}; border: 1px solid {_banner_border}; border-radius: 8px; padding: 6px 14px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
+    <div style="font-size: 13px; color: {_banner_text};">
+        当前登入者：<b style="color: {_banner_name};">{current_user['username']}</b> ｜ 權限：<span style="color: {user_pill_color}; font-weight: 600;">{user_role_tag}</span> ｜ 信箱：<code>{current_user['email']}</code>
     </div>
-    <div style="font-size: 12px; color: #94a3b8;">
+    <div style="font-size: 12px; color: {_banner_sub};">
         ✅ 身分驗證已通過
     </div>
 </div>
@@ -3356,17 +3402,25 @@ elif menu == "📊 老闆：BI 營運成效儀表板":
             )
             fig_risk.update_layout(
                 template='plotly_dark' if is_dark else 'plotly_white',
-                plot_bgcolor='rgba(15, 23, 42, 0.75)' if is_dark else '#ffffff',
-                paper_bgcolor='rgba(15, 23, 42, 0.75)' if is_dark else '#ffffff',
+                plot_bgcolor='rgba(15, 23, 42, 0.75)' if is_dark else '#f8fafc',
+                paper_bgcolor='rgba(15, 23, 42, 0.75)' if is_dark else '#f8fafc',
                 margin=dict(l=20, r=20, t=25, b=20),
                 showlegend=False,
                 font=dict(color="#f1f5f9" if is_dark else "#0f172a", size=13),
-                xaxis=dict(gridcolor='rgba(255,255,255,0.06)' if is_dark else 'rgba(0,0,0,0.06)', title=''),
-                yaxis=dict(gridcolor='rgba(255,255,255,0.06)' if is_dark else 'rgba(0,0,0,0.06)', title='案件數量')
+                xaxis=dict(
+                    gridcolor='rgba(255,255,255,0.06)' if is_dark else 'rgba(0,0,0,0.06)',
+                    title='',
+                    tickfont=dict(color='#f1f5f9' if is_dark else '#0f172a', size=13)
+                ),
+                yaxis=dict(
+                    gridcolor='rgba(255,255,255,0.06)' if is_dark else 'rgba(0,0,0,0.06)',
+                    title='案件數量',
+                    tickfont=dict(color='#f1f5f9' if is_dark else '#0f172a', size=13)
+                )
             )
             fig_risk.update_traces(
                 textposition='outside',
-                textfont=dict(color='#ffffff' if is_dark else '#0f172a', size=13),
+                textfont=dict(color='#f1f5f9' if is_dark else '#1e293b', size=13),
                 marker=dict(line=dict(width=1, color='rgba(255,255,255,0.2)' if is_dark else 'rgba(0,0,0,0.1)'))
             )
             st.plotly_chart(fig_risk, use_container_width=True, config={'displayModeBar': False})
@@ -3377,7 +3431,10 @@ elif menu == "📊 老闆：BI 營運成效儀表板":
         st.subheader("🔍 電腦周邊品類退貨佔比")
         cat_counts = df['product_category'].value_counts().reset_index()
         cat_counts.columns = ['周邊品類', '退貨件數']
-        st.dataframe(cat_counts, use_container_width=True, hide_index=True)
+        if is_dark:
+            st.dataframe(cat_counts, use_container_width=True, hide_index=True)
+        else:
+            st.table(cat_counts)
 
 
 # ==========================================
@@ -3543,29 +3600,6 @@ elif menu == "⚙️ 系統設定 & API":
                         st.error(f"{res_msg}")
             else:
                 st.warning("⚠️ 請先輸入正確格式的收件測試電子信箱！")
-
-    st.markdown("---")
-    st.subheader("🔐 管理員後台密碼管理")
-    admin_cfg = load_admin_config()
-    current_admin_pwd = admin_cfg.get("admin_password", "admin888")
-
-    st.markdown("設定登入「店長審核台」與「老闆 BI 儀表板」之後台管理密碼（系統預設密碼為 `admin888`）：")
-    col_ap1, col_ap2 = st.columns([3, 1])
-    with col_ap1:
-        new_admin_pwd = st.text_input(
-            "修改管理員密碼",
-            value=current_admin_pwd,
-            type="password",
-            help="設定新的管理員密碼。儲存後會持久化記錄於本地 admin_config.json，刷新網頁依然生效。"
-        )
-    with col_ap2:
-        st.markdown("<div style='margin-top:28px;'></div>", unsafe_allow_html=True)
-        if st.button("💾 儲存管理員密碼", use_container_width=True, type="primary"):
-            if new_admin_pwd.strip():
-                save_admin_config(new_admin_pwd.strip())
-                st.success("✅ 管理員密碼已成功更新並永久儲存至 `admin_config.json`！")
-            else:
-                st.warning("⚠️ 管理員密碼不可為空！")
 
     st.markdown("---")
     st.subheader("🛠️ 資料庫重設與展示資料還原")
