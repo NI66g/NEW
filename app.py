@@ -57,23 +57,21 @@ DARK_CSS = """
     [data-testid="stStatusWidget"] {display: none !important;}
     .viewerBadge_container__r5tak, .viewerBadge_link__1SuqQ {display: none !important;}
 
-    /* === 徹底消除四周白邊 === */
+    /* === 消除外層白邊（只針對 html/body，不影響 sidebar/content 佈局） === */
     html, body {
         margin: 0 !important;
         padding: 0 !important;
         overflow-x: hidden !important;
         border: none !important;
     }
-    .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"],
-    .main, section.main, .block-container,
-    [data-testid="block-container"] {
-        margin: 0 !important;
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-        border: none !important;
-        outline: none !important;
-        box-shadow: none !important;
-        max-width: 100% !important;
+    /* 隱藏 sidebar 摺疊/展開按鈕，讓側邊欄永遠固定 */
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="collapsedControl"],
+    button[data-testid="baseButton-headerNoPadding"],
+    [data-testid="stSidebar"] > div:first-child > div > button {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
     }
 
     /* 全域科技感微光漸層背景與微網格 */
@@ -862,23 +860,21 @@ LIGHT_CSS = """
     [data-testid="stStatusWidget"] {display: none !important;}
     .viewerBadge_container__r5tak, .viewerBadge_link__1SuqQ {display: none !important;}
 
-    /* === 徹底消除四周白邊 === */
+    /* === 消除外層白邊（只針對 html/body，不影響 sidebar/content 佈局） === */
     html, body {
         margin: 0 !important;
         padding: 0 !important;
         overflow-x: hidden !important;
         border: none !important;
     }
-    .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"],
-    .main, section.main, .block-container,
-    [data-testid="block-container"] {
-        margin: 0 !important;
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-        border: none !important;
-        outline: none !important;
-        box-shadow: none !important;
-        max-width: 100% !important;
+    /* 隱藏 sidebar 摺疊/展開按鈕，讓側邊欄永遠固定 */
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="collapsedControl"],
+    button[data-testid="baseButton-headerNoPadding"],
+    [data-testid="stSidebar"] > div:first-child > div > button {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
     }
 
 
