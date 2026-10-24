@@ -1,6 +1,9 @@
 # Vercel Deployment Ignore Rules
-# Exclude Python backend and local files from Vercel's static build
-*.py
+# Exclude Python backend and local files from Vercel's build
+app.py
+buyer.py
+docx_builder_lib.py
+generate_capstone_report.py
 requirements.txt
 disputes.db
 admin_config.json
