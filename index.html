@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>電腦周邊智慧售後退換貨與爭議風控平台 · Vercel 雲端入口門戶</title>
+  <meta name="description" content="基於 Google Gemini 3.8 Flash 多模態 AI 的電腦周邊售後退換貨與爭議風控人機協同審核系統">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%3E<text y=%2226%22 font-size=%2224%22>🛡️</text></svg>">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --card-bg: #111827;
+      --border-color: rgba(56, 189, 248, 0.2);
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --nav-height: 58px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Navigation Bar */
+    header {
+      height: var(--nav-height);
+      background: rgba(17, 24, 39, 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 100;
+      flex-shrink: 0;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .brand-icon {
+      font-size: 24px;
+      line-height: 1;
+      filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.4));
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    .badge-vercel {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: var(--primary);
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 6px #10b981;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.9); }
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-btn {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .nav-btn:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .nav-btn.primary {
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      color: #04111d;
+      font-weight: 700;
+      border: none;
+      box-shadow: 0 2px 10px rgba(56, 189, 248, 0.3);
+    }
+
+    .nav-btn.primary:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: calc(100vh - var(--nav-height));
+      background-color: var(--bg-dark);
+      overflow: hidden;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      background: var(--bg-dark);
+    }
+
+    /* Loading Overlay */
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: var(--bg-dark);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      transition: opacity 0.4s ease, visibility 0.4s;
+    }
+
+    .loading-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid rgba(56, 189, 248, 0.15);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 15px;
+      color: var(--text-main);
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .loading-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Setup / Welcome Card (Shown if backend not configured or cold starting) */
+    .setup-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .setup-modal.active {
+      display: flex;
+    }
+
+    .modal-card {
+      background: #111827;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 580px;
+      padding: 28px;
+      position: relative;
+      animation: modalIn 0.25s ease-out;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px;
+      line-height: 1;
+    }
+
+    .close-btn:hover {
+      color: #fff;
+    }
+
+    .modal-body {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+
+    .guide-step {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+
+    .guide-step-title {
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .input-group {
+      margin-top: 16px;
+    }
+
+    .input-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #f1f5f9;
+    }
+
+    .text-input {
+      width: 100%;
+      background: #090d16;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .text-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    /* Architecture Badge Card */
+    .arch-card {
+      background: #090d16;
+      border: 1px dashed rgba(56, 189, 248, 0.3);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 14px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .arch-card b {
+      color: var(--primary);
+    }
+
+    /* Mobile Adaptations */
+    @media (max-width: 768px) {
+      .brand-title {
+        font-size: 13px;
+      }
+      .badge-vercel span.hide-mobile {
+        display: none;
+      }
+      .nav-btn span.btn-text {
+        display: none;
+      }
+      .nav-btn {
+        padding: 6px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="brand-section">
+      <div class="brand-icon">🛡️</div>
+      <div class="brand-title">電腦周邊售後風控平台</div>
+      <div class="badge-vercel">
+        <div class="badge-dot"></div>
+        <span>Vercel Edge<span class="hide-mobile"> Gateway</span></span>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <button class="nav-btn" onclick="openArchModal()" title="查看專題微服務架構說明">
+        📐 <span class="btn-text">專題架構</span>
+      </button>
+      <button class="nav-btn" onclick="openConfigModal()" title="設定或切換 Python 後端網址">
+        ⚙️ <span class="btn-text">後端連線</span>
+      </button>
+      <button class="nav-btn" onclick="reloadFrame()" title="重新整理當前網頁">
+        🔄 <span class="btn-text">刷新</span>
+      </button>
+      <a id="external-link" class="nav-btn primary" href="#" target="_blank" rel="noopener noreferrer" title="在新分頁開啟獨立系統">
+        🚀 <span class="btn-text">獨立視窗</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+      <div class="spinner"></div>
+      <div class="loading-text">正在透過 Vercel 邊緣網路連線至 Python AI 伺服器...</div>
+      <div class="loading-sub">Google Gemini 3.8 Flash 風控核心 · SQLite 智慧審查台</div>
+    </div>
+
+    <!-- Embedded Streamlit Application -->
+    <iframe
+      id="app-frame"
+      src=""
+      allow="camera; microphone; clipboard-read; clipboard-write; display-capture"
+      loading="eager"
+      onload="onFrameLoaded()"
+    ></iframe>
+  </main>
+
+  <!-- Configuration Modal -->
+  <div id="config-modal" class="setup-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">⚙️ Python AI 核心連線設定</div>
+        <button class="close-btn" onclick="closeConfigModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>本專案採用 <b>Vercel Edge CDN + Python Streamlit AI 核心</b> 之現代混合雲微服務架構。請指定您的後端服務網址：</p>
+        
+        <div class="input-group">
+          <label class="input-label" for="backend-input">Streamlit 伺服器網址 (包含 https://)：</label>
+          <input
+            type="url"
+            id="backend-input"
+            class="text-input"
+            placeholder="例如: https://ni66g-old.streamlit.app"
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="arch-card">
+          💡 <b>提示</b>：若您尚未部署 Python 後端，只需至 <b>share.streamlit.io</b> 以 GitHub 登入並選擇 <code>NI66g/old</code> 儲存庫，點擊 Deploy 即可在 1 分鐘內取得免費的專屬後端網址！
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="nav-btn" onclick="closeConfigModal()">取消</button>
+        <button class="nav-btn primary" onclick="saveBackendConfig()">儲存並連線</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Capstone Architecture Modal (For Professors & Oral Defense) -->
+  <div id="arch-modal" class="setup-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">📐 大學專題系統架構說明 (口試加分項)</div>
+        <button class="close-btn" onclick="closeArchModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="guide-step">
+          <div class="guide-step-title">🌐 1. 前端邊緣閘道 (Vercel Edge Network)</div>
+          <div>部署於 Vercel 全球邊緣節點（<code>*.vercel.app</code>），提供毫秒級頁面快取、安全標頭防護與跨裝置自適應介面。符合現代 Jamstack 雲端規範。</div>
+        </div>
+
+        <div class="guide-step">
+          <div class="guide-step-title">🧠 2. 風控計算核心 (Python Container & Gemini AI)</div>
+          <div>專屬 Python 運算容器負責 Google Gemini 3.8 Flash 多模態影像特徵萃取、人機協同審查 (HITL) 流程引擎，以及 Plotly BI 動態數據視覺化。</div>
+        </div>
+
+        <div class="guide-step">
+          <div class="guide-step-title">💾 3. 雙向資料庫與即時通訊 (SQLite + WebSocket)</div>
+          <div>買家退換貨申請單、照片佐證與店長判決即時寫入關聯式資料庫，透過雙向長連線達成前後台即時無延遲連動。</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="nav-btn primary" onclick="closeArchModal()">我了解了</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Default fallback backend URL
+    const DEFAULT_BACKEND_URL = "https://ni66g-old.streamlit.app";
+    const STORAGE_KEY = "warranty_copilot_backend_url";
+
+    function getBackendUrl() {
+      // 1. Check URL query param ?backend=...
+      const urlParams = new URLSearchParams(window.location.search);
+      const queryBackend = urlParams.get("backend");
+      if (queryBackend) {
+        localStorage.setItem(STORAGE_KEY, queryBackend);
+        return queryBackend;
+      }
+
+      // 2. Check localStorage
+      const cached = localStorage.getItem(STORAGE_KEY);
+      if (cached && cached.trim()) {
+        return cached.trim();
+      }
+
+      // 3. Fallback to default
+      return DEFAULT_BACKEND_URL;
+    }
+
+    function initApp() {
+      const backendUrl = getBackendUrl();
+      const iframe = document.getElementById("app-frame");
+      const extLink = document.getElementById("external-link");
+      const backendInput = document.getElementById("backend-input");
+
+      backendInput.value = backendUrl;
+      extLink.href = backendUrl;
+
+      // Ensure embed query parameter for seamless look
+      let targetSrc = backendUrl;
+      if (!targetSrc.includes("embed=true")) {
+        targetSrc += (targetSrc.includes("?") ? "&" : "?") + "embed=true";
+      }
+
+      iframe.src = targetSrc;
+
+      // Fail-safe hide loading overlay after 6 seconds in case of slow iframe events
+      setTimeout(() => {
+        document.getElementById("loading-overlay").classList.add("hidden");
+      }, 6000);
+    }
+
+    function onFrameLoaded() {
+      setTimeout(() => {
+        document.getElementById("loading-overlay").classList.add("hidden");
+      }, 500);
+    }
+
+    function reloadFrame() {
+      document.getElementById("loading-overlay").classList.remove("hidden");
+      const iframe = document.getElementById("app-frame");
+      iframe.src = iframe.src;
+    }
+
+    function openConfigModal() {
+      document.getElementById("backend-input").value = getBackendUrl();
+      document.getElementById("config-modal").classList.add("active");
+    }
+
+    function closeConfigModal() {
+      document.getElementById("config-modal").classList.remove("active");
+    }
+
+    function saveBackendConfig() {
+      let val = document.getElementById("backend-input").value.trim();
+      if (!val) {
+        alert("請輸入有效的後端網址！");
+        return;
+      }
+      if (!val.startsWith("http://") && !val.startsWith("https://")) {
+        val = "https://" + val;
+      }
+      localStorage.setItem(STORAGE_KEY, val);
+      closeConfigModal();
+      initApp();
+    }
+
+    function openArchModal() {
+      document.getElementById("arch-modal").classList.add("active");
+    }
+
+    function closeArchModal() {
+      document.getElementById("arch-modal").classList.remove("active");
+    }
+
+    // Initialize when DOM ready
+    window.addEventListener("DOMContentLoaded", initApp);
+  </script>
+</body>
+</html>
