@@ -2,43 +2,43 @@ name: Keep Streamlit App Alive (24/7)
 
 on:
   schedule:
-    # 每 25 分鐘 ping 一次 Streamlit app，防止進入休眠
-    # Streamlit 免費版在約 7 天無訪問後才休眠，但定時 ping 可保持活躍
-    - cron: '*/25 * * * *'
-  workflow_dispatch:  # 允許手動觸發
+    # 每 20 分鐘 ping 一次，防止 Streamlit 進入休眠
+    - cron: '*/20 * * * *'
+  workflow_dispatch:  # 允許手動觸發測試
 
 jobs:
   keep-alive:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+
     steps:
       - name: Ping Streamlit App
         run: |
-          echo "=== Pinging Streamlit App to prevent sleep ==="
-          # 替換下方 URL 為你的 Streamlit App 實際網址
-          STREAMLIT_URL="${{ secrets.STREAMLIT_APP_URL }}"
-          
-          if [ -z "$STREAMLIT_URL" ]; then
-            echo "⚠️  STREAMLIT_APP_URL secret not set!"
-            echo "請至 GitHub → Settings → Secrets and variables → Actions"
-            echo "新增一個 Secret: STREAMLIT_APP_URL = 你的 Streamlit 網址"
-            exit 1
-          fi
-          
-          echo "Pinging: $STREAMLIT_URL"
+          STREAMLIT_URL="https://c79p6iaujeyjubfmyygaqj.streamlit.app"
+          echo "=== Pinging Streamlit App: $STREAMLIT_URL ==="
+          echo "Timestamp: $(date '+%Y-%m-%d %H:%M:%S UTC')"
+
+          # 第一次 ping（帶重試）
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-            --max-time 30 \
+            --max-time 45 \
             --retry 3 \
-            --retry-delay 5 \
-            "$STREAMLIT_URL" || echo "000")
-          
-          echo "HTTP Response Code: $HTTP_CODE"
-          
-          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "302" ]; then
-            echo "✅ App is alive!"
+            --retry-delay 10 \
+            --retry-max-time 120 \
+            -L \
+            "$STREAMLIT_URL" 2>/dev/null || echo "000")
+
+          echo "HTTP Response: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "302" ] || [ "$HTTP_CODE" = "301" ]; then
+            echo "✅ Streamlit App is alive and responding!"
+          elif [ "$HTTP_CODE" = "000" ]; then
+            echo "⏳ App may be cold-starting, waiting 30s and retrying..."
+            sleep 30
+            HTTP_CODE2=$(curl -s -o /dev/null -w "%{http_code}" \
+              --max-time 45 -L "$STREAMLIT_URL" 2>/dev/null || echo "000")
+            echo "Retry HTTP Response: $HTTP_CODE2"
           else
-            echo "⚠️  App returned $HTTP_CODE - may be starting up"
+            echo "⚠️  Unexpected response: $HTTP_CODE"
           fi
 
-      - name: Log timestamp
-        run: |
-          echo "=== Keep-alive ping completed at $(date '+%Y-%m-%d %H:%M:%S UTC') ==="
+          echo "=== Ping complete ==="
