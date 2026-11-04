@@ -78,7 +78,7 @@ DARK_CSS = """
         border: none !important;
     }
     /* ==========================================
-       響應式雙模排版：手機端頂部吸頂導航 vs 電腦端側邊欄 (深色模式)
+       響應式雙模排版：手機端靠左正方形三條槓導航 vs 電腦端側邊欄 (深色模式)
        ========================================== */
     /* 手機版 (螢幕寬度 <= 768px) */
     @media (max-width: 768px) {
@@ -112,61 +112,92 @@ DARK_CSS = """
             -webkit-overflow-scrolling: touch !important;
         }
 
-        /* 手機頂部常駐吸頂長方形導航列 (橫向 100% 滿版填滿，滑動頁面永遠常駐) */
+        /* 手機靠左正方形三條槓按鈕區塊 (44px × 44px 正方形，固定於畫面左上方) */
         .st-key-mobile_header_bar {
             position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            width: 100vw !important;
-            max-width: 100vw !important;
+            top: 10px !important;
+            left: 12px !important;
+            width: 44px !important;
+            height: 44px !important;
+            min-width: 44px !important;
+            min-height: 44px !important;
+            max-width: 44px !important;
+            max-height: 44px !important;
             z-index: 99999 !important;
-            background: rgba(15, 23, 42, 0.98) !important;
-            backdrop-filter: blur(20px) !important;
-            -webkit-backdrop-filter: blur(20px) !important;
-            border-bottom: 2px solid rgba(56, 189, 248, 0.45) !important;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7) !important;
-            padding: 6px 10px !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
             margin: 0 !important;
             box-sizing: border-box !important;
         }
 
-        /* 三條槓按鈕樣式：點擊前只看得到三條槓 ☰ 圖案 */
         .st-key-mobile_header_bar [data-testid="stPopover"] {
-            width: 100% !important;
-        }
-        .st-key-mobile_header_bar [data-testid="stPopover"] > button {
-            width: 100% !important;
-            background: rgba(30, 41, 59, 0.9) !important;
-            border: 1.5px solid rgba(56, 189, 248, 0.5) !important;
-            border-radius: 8px !important;
-            color: #38bdf8 !important;
-            font-size: 24px !important;
-            font-weight: 900 !important;
+            width: 44px !important;
             height: 44px !important;
+            min-width: 44px !important;
             min-height: 44px !important;
+            display: block !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* 三條槓按鈕：正方形外框，只看的到 ☰ 圖案 */
+        .st-key-mobile_header_bar [data-testid="stPopover"] > button {
+            width: 44px !important;
+            height: 44px !important;
+            min-width: 44px !important;
+            min-height: 44px !important;
+            max-width: 44px !important;
+            max-height: 44px !important;
+            aspect-ratio: 1 / 1 !important;
+            background: rgba(15, 23, 42, 0.95) !important;
+            border: 1.5px solid rgba(56, 189, 248, 0.7) !important;
+            border-radius: 10px !important;
+            color: #38bdf8 !important;
+            font-size: 22px !important;
+            font-weight: 900 !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6) !important;
             padding: 0 !important;
             line-height: 1 !important;
+            cursor: pointer !important;
         }
-        /* 隱藏預設箭頭 SVG，確保點擊前只看到三條槓圖案 */
+        .st-key-mobile_header_bar [data-testid="stPopover"] > button:active {
+            background: rgba(56, 189, 248, 0.25) !important;
+            transform: scale(0.96);
+        }
+        /* 隱藏預設箭頭 SVG，保證點開前只有三條槓 */
         .st-key-mobile_header_bar [data-testid="stPopover"] > button svg {
             display: none !important;
         }
 
-        /* 主畫面頂部預留高度，避免內容被頂部吸頂長條遮擋，並保留正常滑動空間 */
+        /* 點開後的功能下拉選單主體樣式 (保持原有清單設計，高對比懸浮) */
+        div[data-testid="stPopoverBody"] {
+            z-index: 1000000 !important;
+            min-width: 280px !important;
+            max-width: 90vw !important;
+            background: rgba(15, 23, 42, 0.98) !important;
+            backdrop-filter: blur(24px) !important;
+            -webkit-backdrop-filter: blur(24px) !important;
+            border: 1.5px solid rgba(56, 189, 248, 0.5) !important;
+            border-radius: 14px !important;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85) !important;
+            padding: 14px !important;
+        }
+
+        /* 主畫面頂部預留高度，避免內容與左上角正方形按鈕重疊 */
         .main .block-container {
-            padding-top: 68px !important;
+            padding-top: 58px !important;
             padding-bottom: 30px !important;
-            padding-left: 12px !important;
-            padding-right: 12px !important;
+            padding-left: 14px !important;
+            padding-right: 14px !important;
         }
     }
 
-    /* 電腦版 (螢幕寬度 >= 769px)：完全隱藏手機頂部吸頂長條與任何底部導航，確保電腦畫面 100% 正常顯示 */
+    /* 電腦版 (螢幕寬度 >= 769px)：完全隱藏手機三條槓按鈕與任何底部導航，確保電腦畫面 100% 正常顯示 */
     @media (min-width: 769px) {
         .st-key-mobile_header_bar,
         [data-testid="stElementContainer"]:has(.st-key-mobile_header_bar),
@@ -995,7 +1026,7 @@ LIGHT_CSS = """
         border: none !important;
     }
     /* ==========================================
-       響應式雙模排版：手機端頂部吸頂導航 vs 電腦端側邊欄 (淺色模式)
+       響應式雙模排版：手機端靠左正方形三條槓導航 vs 電腦端側邊欄 (淺色模式)
        ========================================== */
     /* 手機版 (螢幕寬度 <= 768px) */
     @media (max-width: 768px) {
@@ -1028,51 +1059,81 @@ LIGHT_CSS = """
 
         .st-key-mobile_header_bar {
             position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            width: 100vw !important;
-            max-width: 100vw !important;
+            top: 10px !important;
+            left: 12px !important;
+            width: 44px !important;
+            height: 44px !important;
+            min-width: 44px !important;
+            min-height: 44px !important;
+            max-width: 44px !important;
+            max-height: 44px !important;
             z-index: 99999 !important;
-            background: rgba(255, 255, 255, 0.98) !important;
-            backdrop-filter: blur(20px) !important;
-            -webkit-backdrop-filter: blur(20px) !important;
-            border-bottom: 2px solid #0284c7 !important;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
-            padding: 6px 10px !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
             margin: 0 !important;
             box-sizing: border-box !important;
         }
 
         .st-key-mobile_header_bar [data-testid="stPopover"] {
-            width: 100% !important;
-        }
-        .st-key-mobile_header_bar [data-testid="stPopover"] > button {
-            width: 100% !important;
-            background: #f0f9ff !important;
-            border: 1.5px solid #0284c7 !important;
-            border-radius: 8px !important;
-            color: #0284c7 !important;
-            font-size: 24px !important;
-            font-weight: 900 !important;
+            width: 44px !important;
             height: 44px !important;
+            min-width: 44px !important;
             min-height: 44px !important;
+            display: block !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .st-key-mobile_header_bar [data-testid="stPopover"] > button {
+            width: 44px !important;
+            height: 44px !important;
+            min-width: 44px !important;
+            min-height: 44px !important;
+            max-width: 44px !important;
+            max-height: 44px !important;
+            aspect-ratio: 1 / 1 !important;
+            background: #ffffff !important;
+            border: 1.5px solid #0284c7 !important;
+            border-radius: 10px !important;
+            color: #0284c7 !important;
+            font-size: 22px !important;
+            font-weight: 900 !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12) !important;
             padding: 0 !important;
             line-height: 1 !important;
+            cursor: pointer !important;
+        }
+        .st-key-mobile_header_bar [data-testid="stPopover"] > button:active {
+            background: #e0f2fe !important;
+            transform: scale(0.96);
         }
         .st-key-mobile_header_bar [data-testid="stPopover"] > button svg {
             display: none !important;
         }
 
+        div[data-testid="stPopoverBody"] {
+            z-index: 1000000 !important;
+            min-width: 280px !important;
+            max-width: 90vw !important;
+            background: rgba(255, 255, 255, 0.98) !important;
+            backdrop-filter: blur(24px) !important;
+            -webkit-backdrop-filter: blur(24px) !important;
+            border: 1.5px solid #0284c7 !important;
+            border-radius: 14px !important;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.15) !important;
+            padding: 14px !important;
+        }
+
         .main .block-container {
-            padding-top: 68px !important;
+            padding-top: 58px !important;
             padding-bottom: 30px !important;
-            padding-left: 12px !important;
-            padding-right: 12px !important;
+            padding-left: 14px !important;
+            padding-right: 14px !important;
         }
     }
 
@@ -2942,12 +3003,12 @@ with st.sidebar:
     st.caption(f"👤 當前帳號：{current_user['username']} ({'管理方' if is_admin else '買家'})")
 
 # ==========================================
-# 手機版專屬：頂部吸頂長方形導航列 (Sticky Top ☰ Popover)
-# 電腦版完全隱藏 (display: none)，手機版左右長度 100% 滿版填滿且隨螢幕滾動常駐在最頂端
-# 點開前「只看的到三條槓 ☰ 圖案」，點開後彈出完整功能下拉選單
+# 手機版專屬：靠左正方形三條槓下拉選單 (44px × 44px ☰ Popover)
+# 電腦版完全隱藏 (display: none)，手機版常駐於畫面左上方正方形區塊，點開前只看的到 ☰ 圖案
+# 點開後的選單樣式維持完整清單不變
 # ==========================================
 with st.container(key="mobile_header_bar"):
-    with st.popover("☰", use_container_width=True):
+    with st.popover("☰", use_container_width=False):
         st.markdown(
             f'''
             <div style="font-size:13px; font-weight:700; color:{'#38bdf8' if is_admin else '#10b981'}; margin-bottom:8px;">
@@ -2957,15 +3018,15 @@ with st.container(key="mobile_header_bar"):
             unsafe_allow_html=True
         )
         st.markdown("---")
-        for item in nav_items:
+        for idx, item in enumerate(nav_items):
             is_active = (st.session_state["active_nav_menu"] == item["id"])
             btn_type = "primary" if is_active else "secondary"
-            if st.button(f"{item['id']}", key=f"m_pop_item_{item['id']}", type=btn_type, use_container_width=True):
+            if st.button(f"{item['id']}", key=f"m_pop_nav_btn_{idx}", type=btn_type, use_container_width=True):
                 st.session_state["active_nav_menu"] = item["id"]
                 st.session_state["desktop_sidebar_radio"] = item["id"]
                 st.rerun()
         st.markdown("---")
-        if st.button(f"🚪 登出系統 ({current_user['username']})", key="m_pop_logout_action", type="secondary", use_container_width=True):
+        if st.button(f"🚪 登出系統 ({current_user['username']})", key="m_pop_logout_btn_action", type="secondary", use_container_width=True):
             st.session_state["current_user"] = None
             st.session_state["admin_authenticated"] = False
             st.rerun()
