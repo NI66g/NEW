@@ -1867,6 +1867,11 @@ def register_user(username, password, email, role="user", admin_code=""):
     if c.fetchone():
         conn.close()
         return False, f"❌ 帳號「{username}」已被註冊，請更換其他帳號名稱！"
+    # 檢查電子信箱 (Gmail等) 是否已被使用
+    c.execute("SELECT id FROM users WHERE LOWER(email) = LOWER(?)", (email,))
+    if c.fetchone():
+        conn.close()
+        return False, "❌ 此電子信箱已被使用！"
 
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     c.execute(
