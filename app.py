@@ -114,18 +114,19 @@ DARK_CSS = """
         box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.5);
     }
     
-    /* 底部導航欄高對比常駐懸浮樣式 */
+    /* 底部導航欄高對比常駐懸浮樣式 (抬升 40px，避開並覆蓋底部浮水印) */
     div[data-testid="stBottom"] {
         z-index: 99999 !important;
         position: fixed !important;
-        bottom: 0 !important;
+        bottom: 40px !important;
         left: 0 !important;
         right: 0 !important;
-        background: rgba(15, 23, 42, 0.94) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border-top: 1.5px solid rgba(56, 189, 248, 0.35) !important;
-        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.7) !important;
+        background: rgba(15, 23, 42, 0.96) !important;
+        backdrop-filter: blur(24px) !important;
+        -webkit-backdrop-filter: blur(24px) !important;
+        border-top: 1.5px solid rgba(56, 189, 248, 0.45) !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.5) !important;
+        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.8) !important;
         padding: 4px 8px 6px 8px !important;
     }
     div[data-testid="stBottomBlockContainer"] {
@@ -987,18 +988,19 @@ LIGHT_CSS = """
         box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.5);
     }
     
-    /* 底部導航欄高對比常駐懸浮樣式 */
+    /* 底部導航欄高對比常駐懸浮樣式 (抬升 40px，避開並覆蓋底部浮水印) */
     div[data-testid="stBottom"] {
         z-index: 99999 !important;
         position: fixed !important;
-        bottom: 0 !important;
+        bottom: 40px !important;
         left: 0 !important;
         right: 0 !important;
-        background: rgba(15, 23, 42, 0.94) !important;
-        backdrop-filter: blur(20px) !important;
-        -webkit-backdrop-filter: blur(20px) !important;
-        border-top: 1.5px solid rgba(56, 189, 248, 0.35) !important;
-        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.7) !important;
+        background: rgba(15, 23, 42, 0.96) !important;
+        backdrop-filter: blur(24px) !important;
+        -webkit-backdrop-filter: blur(24px) !important;
+        border-top: 1.5px solid rgba(56, 189, 248, 0.45) !important;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.5) !important;
+        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.8) !important;
         padding: 4px 8px 6px 8px !important;
     }
     div[data-testid="stBottomBlockContainer"] {
