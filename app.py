@@ -64,35 +64,49 @@ DARK_CSS = """
         overflow-x: hidden !important;
         border: none !important;
     }
-    /* ========================================================
-       強制 Sidebar 永遠展開 - 使用 transform 覆蓋
-       ======================================================== */
-    /* 強制 sidebar 本體永遠顯示（覆蓋 Streamlit 的 translateX 收合） */
-    section[data-testid="stSidebar"],
-    [data-testid="stSidebar"] {
-        transform: none !important;
-        -webkit-transform: none !important;
-        min-width: 244px !important;
-        width: 244px !important;
-        margin-left: 0 !important;
-        left: 0 !important;
-        visibility: visible !important;
-        display: flex !important;
-        opacity: 1 !important;
-        flex-shrink: 0 !important;
-        position: relative !important;
-        pointer-events: all !important;
-        transition: none !important;
+    /* 響應式手機底部導航列樣式 */
+    @media (max-width: 768px) {
+        /* 在手機寬度下，徹底隱藏側邊欄與摺疊展開鈕，釋放 100% 螢幕空間給主頁面 */
+        section[data-testid="stSidebar"],
+        [data-testid="stSidebar"],
+        [data-testid="collapsedControl"],
+        [data-testid="stSidebarCollapseButton"] {
+            display: none !important;
+            visibility: hidden !important;
+            width: 0 !important;
+            min-width: 0 !important;
+            max-width: 0 !important;
+            position: absolute !important;
+            left: -9999px !important;
+        }
+        
+        /* 為主畫面底部預留空間，避免內容被懸浮導航列遮擋 */
+        .main .block-container {
+            padding-bottom: 95px !important;
+        }
     }
-    /* 隱藏 sidebar 內部的「收合」按鈕（讓使用者無法關掉 sidebar） */
-    [data-testid="stSidebarCollapseButton"] {
-        display: none !important;
-        visibility: hidden !important;
+
+    /* 底部導航懸浮按鈕高科技擬物膠囊樣式 */
+    .mobile-bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 99999;
+        background: rgba(15, 23, 42, 0.92);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid rgba(56, 189, 248, 0.25);
+        padding: 6px 12px 10px 12px;
+        box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.5);
     }
-    /* 隱藏主畫面左緣的「展開」小箭頭（sidebar 永遠展開故不需要） */
-    [data-testid="collapsedControl"] {
-        display: none !important;
-        visibility: hidden !important;
+    
+    div[data-testid="stBottomBlockContainer"] {
+        background: transparent !important;
+    }
+    
+    div[data-testid="stBottom"] {
+        z-index: 99999 !important;
     }
 
     /* 全域科技感微光漸層背景與微網格 */
@@ -888,35 +902,49 @@ LIGHT_CSS = """
         overflow-x: hidden !important;
         border: none !important;
     }
-    /* ========================================================
-       強制 Sidebar 永遠展開 - 使用 transform 覆蓋
-       ======================================================== */
-    /* 強制 sidebar 本體永遠顯示（覆蓋 Streamlit 的 translateX 收合） */
-    section[data-testid="stSidebar"],
-    [data-testid="stSidebar"] {
-        transform: none !important;
-        -webkit-transform: none !important;
-        min-width: 244px !important;
-        width: 244px !important;
-        margin-left: 0 !important;
-        left: 0 !important;
-        visibility: visible !important;
-        display: flex !important;
-        opacity: 1 !important;
-        flex-shrink: 0 !important;
-        position: relative !important;
-        pointer-events: all !important;
-        transition: none !important;
+    /* 響應式手機底部導航列樣式 */
+    @media (max-width: 768px) {
+        /* 在手機寬度下，徹底隱藏側邊欄與摺疊展開鈕，釋放 100% 螢幕空間給主頁面 */
+        section[data-testid="stSidebar"],
+        [data-testid="stSidebar"],
+        [data-testid="collapsedControl"],
+        [data-testid="stSidebarCollapseButton"] {
+            display: none !important;
+            visibility: hidden !important;
+            width: 0 !important;
+            min-width: 0 !important;
+            max-width: 0 !important;
+            position: absolute !important;
+            left: -9999px !important;
+        }
+        
+        /* 為主畫面底部預留空間，避免內容被懸浮導航列遮擋 */
+        .main .block-container {
+            padding-bottom: 95px !important;
+        }
     }
-    /* 隱藏 sidebar 內部的「收合」按鈕（讓使用者無法關掉 sidebar） */
-    [data-testid="stSidebarCollapseButton"] {
-        display: none !important;
-        visibility: hidden !important;
+
+    /* 底部導航懸浮按鈕高科技擬物膠囊樣式 */
+    .mobile-bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 99999;
+        background: rgba(15, 23, 42, 0.92);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid rgba(56, 189, 248, 0.25);
+        padding: 6px 12px 10px 12px;
+        box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.5);
     }
-    /* 隱藏主畫面左緣的「展開」小箭頭（sidebar 永遠展開故不需要） */
-    [data-testid="collapsedControl"] {
-        display: none !important;
-        visibility: hidden !important;
+    
+    div[data-testid="stBottomBlockContainer"] {
+        background: transparent !important;
+    }
+    
+    div[data-testid="stBottom"] {
+        z-index: 99999 !important;
     }
 
 
@@ -1672,42 +1700,7 @@ LIGHT_CSS = """
 # 動態注入深色或淺色樣式
 st.markdown(DARK_CSS if is_dark else LIGHT_CSS, unsafe_allow_html=True)
 
-# 強制側邊欄永遠展開 (JavaScript 注入防止收合)
-st.markdown("""
-<script>
-(function() {
-    'use strict';
-    var _forceOpen = function() {
-        var btn = document.querySelector('[data-testid="collapsedControl"] button');
-        if (!btn) btn = document.querySelector('[data-testid="collapsedControl"]');
-        if (btn) { btn.click(); return true; }
-        return false;
-    };
-    var _fixTransform = function() {
-        var sidebar = document.querySelector('section[data-testid="stSidebar"]');
-        if (sidebar) {
-            sidebar.style.setProperty('transform', 'none', 'important');
-            sidebar.style.setProperty('visibility', 'visible', 'important');
-            sidebar.style.setProperty('opacity', '1', 'important');
-            sidebar.style.setProperty('min-width', '244px', 'important');
-            sidebar.style.setProperty('width', '244px', 'important');
-            sidebar.style.setProperty('display', 'flex', 'important');
-        }
-    };
-    setTimeout(_fixTransform, 200);
-    setTimeout(_fixTransform, 600);
-    setTimeout(_fixTransform, 1200);
-    setTimeout(_forceOpen, 300);
-    setTimeout(_forceOpen, 700);
-    if (window.MutationObserver) {
-        var _obs = new MutationObserver(function() { _fixTransform(); });
-        setTimeout(function() {
-            _obs.observe(document.body, {attributes: true, subtree: true, attributeFilter: ['style','class']});
-        }, 500);
-    }
-})();
-</script>
-""", unsafe_allow_html=True)
+# 側邊欄在手機模式下完全隱藏，改由底部導航列控制
 
 
 # 電腦周邊受檢類別清單（嚴格限定：鍵盤、滑鼠、耳機）
@@ -2731,74 +2724,96 @@ if current_user is None:
 is_admin = (current_user["role"] == "admin")
 st.session_state["admin_authenticated"] = is_admin
 
+# 導航選項與圖示配置 (支援手機底部導航列與電腦側邊欄雙模雙軌聯動)
 if not is_admin:
-    # 一般使用者 (買家) 視圖：僅提供買家前台服務
-    st.sidebar.markdown(f"""
-    <div class="sidebar-header-box">
-        <div class="sidebar-title">🛍️ 周邊售後客服中心</div>
-        <div class="sidebar-subtitle">👤 一般使用者：{current_user['username']}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    menu = st.sidebar.radio(
-        "📌 買家服務選單",
-        [
-            "📝 買家：提交退換貨申請",
-            "🔍 買家：查詢進度 / 補充照片"
-        ]
-    )
-
-    st.sidebar.markdown("---")
-    st.sidebar.info("""
-    **🎯 受理電腦周邊範圍：**
-    - ⌨️ **機械/薄膜鍵盤** (軸體/鍵位/PCB)
-    - 🖱️ **滑鼠** (微動/編碼器/感應器)
-    - 🎧 **耳機** (單元/頭樑/收音)
-
-    **📋 買家售後須知：**
-    1. 購買 7 日內商品享新品不良免費換新/退款服務。
-    2. 申請時【必須上傳瑕疵佐證照片】，未附照片恕無法受理申請。
-    3. 審核判決將自動寄發通知信至您的註冊信箱。
-    """)
-
+    nav_items = [
+        {"id": "📝 買家：提交退換貨申請", "label": "退換申請", "icon": "📝"},
+        {"id": "🔍 買家：查詢進度 / 補充照片", "label": "進度查詢", "icon": "🔍"}
+    ]
 else:
-    # 管理方 (店長/老闆) 視圖：完整解鎖管理功能
-    st.sidebar.markdown(f"""
-    <div class="sidebar-header-box">
-        <div class="sidebar-title">🛡️ Peripheral Copilot</div>
-        <div class="sidebar-subtitle-admin">🟢 管理員已登入：{current_user['username']}</div>
-    </div>
-    """, unsafe_allow_html=True)
+    nav_items = [
+        {"id": "🧑‍💼 店長：人機對照審核台", "label": "審核台", "icon": "🧑‍💼"},
+        {"id": "📊 老闆：BI 營運成效儀表板", "label": "BI儀表板", "icon": "📊"},
+        {"id": "👥 帳號清單與權限管理", "label": "會員權限", "icon": "👥"},
+        {"id": "⚙️ 系統設定 & API", "label": "系統設定", "icon": "⚙️"},
+        {"id": "📝 買家：提交退換貨申請", "label": "買家申請", "icon": "📝"},
+        {"id": "🔍 買家：查詢進度 / 補充照片", "label": "買家進度", "icon": "🔍"}
+    ]
 
-    menu = st.sidebar.radio(
-        "📌 系統功能導航",
-        [
-            "🧑‍💼 店長：人機對照審核台",
-            "📊 老闆：BI 營運成效儀表板",
-            "👥 帳號清單與權限管理",
-            "⚙️ 系統設定 & API",
-            "📝 買家：提交退換貨申請",
-            "🔍 買家：查詢進度 / 補充照片"
-        ]
+valid_nav_ids = [item["id"] for item in nav_items]
+
+# 初始化當前選取頁面狀態
+if "active_nav_menu" not in st.session_state or st.session_state["active_nav_menu"] not in valid_nav_ids:
+    st.session_state["active_nav_menu"] = valid_nav_ids[0]
+
+# --- 側邊欄（電腦端寬螢幕顯示） ---
+with st.sidebar:
+    if not is_admin:
+        st.markdown(f"""
+        <div class="sidebar-header-box">
+            <div class="sidebar-title">🛍️ 周邊售後客服中心</div>
+            <div class="sidebar-subtitle">👤 一般使用者：{current_user['username']}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f"""
+        <div class="sidebar-header-box">
+            <div class="sidebar-title">🛡️ Peripheral Copilot</div>
+            <div class="sidebar-subtitle-admin">🟢 管理員已登入：{current_user['username']}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    sidebar_idx = valid_nav_ids.index(st.session_state["active_nav_menu"])
+    chosen_sidebar = st.radio(
+        "📌 系統功能導航" if is_admin else "📌 買家服務選單",
+        valid_nav_ids,
+        index=sidebar_idx,
+        key="desktop_sidebar_radio"
     )
+    if chosen_sidebar != st.session_state["active_nav_menu"]:
+        st.session_state["active_nav_menu"] = chosen_sidebar
+        st.rerun()
 
-    st.sidebar.markdown("---")
-    st.sidebar.info("""
+    st.markdown("---")
+    st.info("""
     **🎯 檢測對象聚焦：**
     - ⌨️ **機械/薄膜鍵盤** (軸體/鍵位/PCB)
     - 🖱️ **滑鼠** (微動/編碼器/感應器)
     - 🎧 **耳機** (單元/頭樑/收音)
     """)
 
-# 側邊欄底部：帳號資訊與登出按鈕
-st.sidebar.markdown("---")
-if st.sidebar.button(f"🚪 登出系統 ({current_user['username']})", use_container_width=True):
-    st.session_state["current_user"] = None
-    st.session_state["admin_authenticated"] = False
-    st.rerun()
+    st.markdown("---")
+    if st.button(f"🚪 登出系統 ({current_user['username']})", use_container_width=True, key="sidebar_logout_btn"):
+        st.session_state["current_user"] = None
+        st.session_state["admin_authenticated"] = False
+        st.rerun()
+    st.caption(f"👤 當前帳號：{current_user['username']} ({'管理方' if is_admin else '買家'})")
 
-st.sidebar.caption(f"👤 當前帳號：{current_user['username']} ({'管理方' if is_admin else '買家'})")
+# --- 手機端現代底部圖示導航欄 (類似 X / 現代社群 App 底部導航) ---
+try:
+    bottom_container = st.bottom()
+except Exception:
+    bottom_container = None
 
+if bottom_container is not None:
+    with bottom_container:
+        b_cols = st.columns(len(nav_items) + 1)
+        for idx, item in enumerate(nav_items):
+            with b_cols[idx]:
+                is_active = (st.session_state["active_nav_menu"] == item["id"])
+                btn_type = "primary" if is_active else "secondary"
+                btn_label = f"{item['icon']} {item['label']}"
+                if st.button(btn_label, key=f"m_nav_btn_{idx}", type=btn_type, use_container_width=True):
+                    if not is_active:
+                        st.session_state["active_nav_menu"] = item["id"]
+                        st.rerun()
+        with b_cols[-1]:
+            if st.button("🚪 登出", key="m_nav_btn_logout", type="secondary", use_container_width=True):
+                st.session_state["current_user"] = None
+                st.session_state["admin_authenticated"] = False
+                st.rerun()
+
+menu = st.session_state["active_nav_menu"]
 # 安全防護：非管理員嘗試存取管理後台頁面時自動導向
 if menu in ["🧑‍💼 店長：人機對照審核台", "📊 老闆：BI 營運成效儀表板", "👥 帳號清單與權限管理", "⚙️ 系統設定 & API"] and not is_admin:
     st.warning("⚠️ 該頁面僅限管理方存取，已自動導向買家服務門戶。")
