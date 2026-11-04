@@ -101,12 +101,34 @@ DARK_CSS = """
         box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.5);
     }
     
-    div[data-testid="stBottomBlockContainer"] {
-        background: transparent !important;
-    }
-    
+    /* 底部導航欄高對比常駐懸浮樣式 */
     div[data-testid="stBottom"] {
         z-index: 99999 !important;
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        background: rgba(15, 23, 42, 0.94) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border-top: 1.5px solid rgba(56, 189, 248, 0.35) !important;
+        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.7) !important;
+        padding: 4px 8px 6px 8px !important;
+    }
+    div[data-testid="stBottomBlockContainer"] {
+        background: transparent !important;
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
+        max-width: 900px !important;
+        margin: 0 auto !important;
+    }
+    /* 底部導航按鈕高質感緊湊排版 */
+    div[data-testid="stBottom"] button {
+        padding: 4px 6px !important;
+        font-size: 13px !important;
+        white-space: nowrap !important;
+        border-radius: 10px !important;
+        min-height: 42px !important;
     }
 
     /* 全域科技感微光漸層背景與微網格 */
@@ -939,12 +961,34 @@ LIGHT_CSS = """
         box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.5);
     }
     
-    div[data-testid="stBottomBlockContainer"] {
-        background: transparent !important;
-    }
-    
+    /* 底部導航欄高對比常駐懸浮樣式 */
     div[data-testid="stBottom"] {
         z-index: 99999 !important;
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        background: rgba(15, 23, 42, 0.94) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border-top: 1.5px solid rgba(56, 189, 248, 0.35) !important;
+        box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.7) !important;
+        padding: 4px 8px 6px 8px !important;
+    }
+    div[data-testid="stBottomBlockContainer"] {
+        background: transparent !important;
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
+        max-width: 900px !important;
+        margin: 0 auto !important;
+    }
+    /* 底部導航按鈕高質感緊湊排版 */
+    div[data-testid="stBottom"] button {
+        padding: 4px 6px !important;
+        font-size: 13px !important;
+        white-space: nowrap !important;
+        border-radius: 10px !important;
+        min-height: 42px !important;
     }
 
 
@@ -2789,14 +2833,9 @@ with st.sidebar:
         st.rerun()
     st.caption(f"👤 當前帳號：{current_user['username']} ({'管理方' if is_admin else '買家'})")
 
-# --- 手機端現代底部圖示導航欄 (類似 X / 現代社群 App 底部導航) ---
+# --- 現代 App 底部圖示導航列 (類似 X / Twitter 等主流應用) ---
 try:
-    bottom_container = st.bottom()
-except Exception:
-    bottom_container = None
-
-if bottom_container is not None:
-    with bottom_container:
+    with st.bottom:
         b_cols = st.columns(len(nav_items) + 1)
         for idx, item in enumerate(nav_items):
             with b_cols[idx]:
@@ -2812,6 +2851,8 @@ if bottom_container is not None:
                 st.session_state["current_user"] = None
                 st.session_state["admin_authenticated"] = False
                 st.rerun()
+except Exception as _b_err:
+    pass
 
 menu = st.session_state["active_nav_menu"]
 # 安全防護：非管理員嘗試存取管理後台頁面時自動導向
