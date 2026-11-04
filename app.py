@@ -51,11 +51,24 @@ DARK_CSS = """
     #stDecoration, [data-testid="stDecoration"] {display: none !important; visibility: hidden !important; height: 0 !important; width: 0 !important; margin: 0 !important; padding: 0 !important;}
     [data-testid="stHeader"] {display: none !important; visibility: hidden !important; height: 0 !important;}
 
-    footer {visibility: hidden !important; display: none !important;}
+    footer {visibility: hidden !important; display: none !important; height: 0 !important; max-height: 0 !important; margin: 0 !important; padding: 0 !important;}
     header {visibility: hidden !important; display: none !important;}
     [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
     [data-testid="stStatusWidget"] {display: none !important;}
     .viewerBadge_container__r5tak, .viewerBadge_link__1SuqQ {display: none !important;}
+    /* 徹底銷除 Streamlit 底部白色浮水印橫條 (Built with Streamlit / Fullscreen) */
+    div[class*="viewerBadge"],
+    div[class*="StatusWidget"],
+    div[class*="FloatingContainer"],
+    footer[class*="footer"],
+    div[data-testid="stDecoration"],
+    [data-testid="stFooter"] {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
 
     /* === 消除外層白邊（只針對 html/body，不影響 sidebar/content 佈局） === */
     html, body {
@@ -911,11 +924,24 @@ LIGHT_CSS = """
     #stDecoration, [data-testid="stDecoration"] {display: none !important; visibility: hidden !important; height: 0 !important; width: 0 !important; margin: 0 !important; padding: 0 !important;}
     [data-testid="stHeader"] {display: none !important; visibility: hidden !important; height: 0 !important;}
 
-    footer {visibility: hidden !important; display: none !important;}
+    footer {visibility: hidden !important; display: none !important; height: 0 !important; max-height: 0 !important; margin: 0 !important; padding: 0 !important;}
     header {visibility: hidden !important; display: none !important;}
     [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
     [data-testid="stStatusWidget"] {display: none !important;}
     .viewerBadge_container__r5tak, .viewerBadge_link__1SuqQ {display: none !important;}
+    /* 徹底銷除 Streamlit 底部白色浮水印橫條 (Built with Streamlit / Fullscreen) */
+    div[class*="viewerBadge"],
+    div[class*="StatusWidget"],
+    div[class*="FloatingContainer"],
+    footer[class*="footer"],
+    div[data-testid="stDecoration"],
+    [data-testid="stFooter"] {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
 
     /* === 消除外層白邊（只針對 html/body，不影響 sidebar/content 佈局） === */
     html, body {
@@ -2807,16 +2833,18 @@ with st.sidebar:
         </div>
         """, unsafe_allow_html=True)
 
+    # 使用 session_state 精確同步側邊欄與底部導航
+    def _on_sidebar_change():
+        st.session_state["active_nav_menu"] = st.session_state["desktop_sidebar_radio"]
+
     sidebar_idx = valid_nav_ids.index(st.session_state["active_nav_menu"])
-    chosen_sidebar = st.radio(
+    st.radio(
         "📌 系統功能導航" if is_admin else "📌 買家服務選單",
         valid_nav_ids,
         index=sidebar_idx,
-        key="desktop_sidebar_radio"
+        key="desktop_sidebar_radio",
+        on_change=_on_sidebar_change
     )
-    if chosen_sidebar != st.session_state["active_nav_menu"]:
-        st.session_state["active_nav_menu"] = chosen_sidebar
-        st.rerun()
 
     st.markdown("---")
     st.info("""
@@ -2843,9 +2871,9 @@ try:
                 btn_type = "primary" if is_active else "secondary"
                 btn_label = f"{item['icon']} {item['label']}"
                 if st.button(btn_label, key=f"m_nav_btn_{idx}", type=btn_type, use_container_width=True):
-                    if not is_active:
-                        st.session_state["active_nav_menu"] = item["id"]
-                        st.rerun()
+                    st.session_state["active_nav_menu"] = item["id"]
+                    st.session_state["desktop_sidebar_radio"] = item["id"]
+                    st.rerun()
         with b_cols[-1]:
             if st.button("🚪 登出", key="m_nav_btn_logout", type="secondary", use_container_width=True):
                 st.session_state["current_user"] = None
@@ -2853,7 +2881,6 @@ try:
                 st.rerun()
 except Exception as _b_err:
     pass
-
 menu = st.session_state["active_nav_menu"]
 # 安全防護：非管理員嘗試存取管理後台頁面時自動導向
 if menu in ["🧑‍💼 店長：人機對照審核台", "📊 老闆：BI 營運成效儀表板", "👥 帳號清單與權限管理", "⚙️ 系統設定 & API"] and not is_admin:
