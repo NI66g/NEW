@@ -2875,15 +2875,38 @@ if menu == "📝 買家：提交退換貨申請":
         
         photo_tabs = st.tabs(["📷 手機鏡頭直接拍照", "📁 從相簿/電腦選取 (支援多張)"])
         with photo_tabs[0]:
-            cam_photo = st.camera_input("點擊按鈕開啟相機拍照", key="app_buyer_cam_photo")
+            st.markdown(
+                '''
+                <label for="cam_native_main" style="
+                    display:flex;align-items:center;justify-content:center;gap:10px;
+                    background:linear-gradient(135deg,#2563eb,#4f46e5);
+                    color:#fff;font-size:16px;font-weight:700;
+                    padding:14px 28px;border-radius:12px;cursor:pointer;
+                    box-shadow:0 4px 14px rgba(37,99,235,0.4);
+                    margin:8px 0;user-select:none;text-align:center;
+                ">
+                    &#128247;&nbsp; 點此開啟手機相機拍照
+                </label>
+                <input id="cam_native_main" type="file" accept="image/*" capture="environment" style="display:none;">
+                <p style="font-size:12px;color:#94a3b8;margin-top:6px;">
+                    &#128241; 手機點按鈕則直接開啟相機，電腦點選將開啟檔案選取視窗
+                </p>
+                ''',
+                unsafe_allow_html=True
+            )
+            cam_photo = st.file_uploader(
+                "或選取照片檔案",
+                type=["jpg","jpeg","png","webp","heic","JPG","JPEG","PNG"],
+                key="app_buyer_cam_photo",
+                label_visibility="collapsed"
+            )
             if cam_photo is not None:
                 cam_bytes = cam_photo.getvalue()
                 existing_bytes = [p["bytes"] for p in st.session_state["app_buyer_photos"]]
                 if cam_bytes not in existing_bytes:
                     p_name = f"相機拍攝 #{len(st.session_state['app_buyer_photos']) + 1}"
                     st.session_state["app_buyer_photos"].append({"name": p_name, "bytes": cam_bytes})
-                    st.success(f"✅ 已成功將【{p_name}】加入佐證相簿！若需拍攝其他角度可繼續拍照。")
-
+                    st.success(f"✅ 已成功將「{p_name}」加入佐證相簿！")
         with photo_tabs[1]:
             file_photos = st.file_uploader(
                 "選取相片或損壞照片檔案 (可複選多張檔案)",
@@ -3068,14 +3091,38 @@ elif menu == "🔍 買家：查詢進度 / 補充照片":
 
                         supp_tabs = st.tabs(["📷 手機相機直接拍照", "📁 從相簿/檔案選取 (支援多張)"])
                         with supp_tabs[0]:
-                            supp_cam = st.camera_input("開啟相機拍照補件", key=f"supp_cam_{item['id']}")
+                            st.markdown(
+                                f'''
+                                <label for="supp_native_{item['id']}" style="
+                                    display:flex;align-items:center;justify-content:center;gap:10px;
+                                    background:linear-gradient(135deg,#2563eb,#4f46e5);
+                                    color:#fff;font-size:15px;font-weight:700;
+                                    padding:12px 24px;border-radius:10px;cursor:pointer;
+                                    box-shadow:0 4px 14px rgba(37,99,235,0.4);
+                                    margin:6px 0;user-select:none;text-align:center;
+                                ">
+                                    &#128247;&nbsp; 點此開啟手機相機補拍照片
+                                </label>
+                                <input id="supp_native_{item['id']}" type="file" accept="image/*" capture="environment" style="display:none;">
+                                <p style="font-size:12px;color:#94a3b8;margin-top:6px;">
+                                    &#128241; 手機點按鈕則直接開啟相機
+                                </p>
+                                ''',
+                                unsafe_allow_html=True
+                            )
+                            supp_cam = st.file_uploader(
+                                "或選取補件照片",
+                                type=["jpg","jpeg","png","webp","heic","JPG","JPEG","PNG"],
+                                key=f"supp_cam_{item['id']}",
+                                label_visibility="collapsed"
+                            )
                             if supp_cam is not None:
                                 cam_b = supp_cam.getvalue()
                                 ex_b = [p["bytes"] for p in st.session_state[supp_key]]
                                 if cam_b not in ex_b:
                                     p_name = f"相機補拍 #{len(st.session_state[supp_key]) + 1}"
                                     st.session_state[supp_key].append({"name": p_name, "bytes": cam_b})
-                                    st.success(f"✅ 已成功將【{p_name}】加入補件相簿！")
+                                    st.success(f"✅ 已成功將「{p_name}」加入補件相簿！")
 
                         with supp_tabs[1]:
                             supp_files = st.file_uploader(
