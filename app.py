@@ -78,11 +78,11 @@ DARK_CSS = """
         border: none !important;
     }
     /* ==========================================
-       響應式雙模排版：手機端頂部吸頂長方形導航 vs 電腦端側邊欄 (深色模式)
+       響應式雙模排版：手機端頂部吸頂導航 vs 電腦端側邊欄 (深色模式)
        ========================================== */
     /* 手機版 (螢幕寬度 <= 768px) */
     @media (max-width: 768px) {
-        /* 手機模式：徹底隱藏側邊欄與摺疊展開鈕 */
+        /* 手機模式：隱藏電腦側邊欄與其收折鈕 */
         section[data-testid="stSidebar"],
         [data-testid="stSidebar"],
         [data-testid="collapsedControl"],
@@ -106,58 +106,70 @@ DARK_CSS = """
             padding: 0 !important;
         }
 
+        /* 確保手機畫面自然流暢垂直滑動 */
+        html, body, .stApp, [data-testid="stAppViewContainer"], section.main {
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+        }
+
         /* 手機頂部常駐吸頂長方形導航列 (橫向 100% 滿版填滿，滑動頁面永遠常駐) */
-        div[data-testid="stVerticalBlock"]:has(#mobile-top-bar-box) {
+        .st-key-mobile_header_bar {
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             right: 0 !important;
             width: 100vw !important;
             max-width: 100vw !important;
-            z-index: 999999 !important;
+            z-index: 99999 !important;
             background: rgba(15, 23, 42, 0.98) !important;
             backdrop-filter: blur(20px) !important;
             -webkit-backdrop-filter: blur(20px) !important;
-            border-bottom: 2px solid rgba(56, 189, 248, 0.5) !important;
+            border-bottom: 2px solid rgba(56, 189, 248, 0.45) !important;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7) !important;
-            padding: 8px 12px !important;
+            padding: 6px 10px !important;
             margin: 0 !important;
             box-sizing: border-box !important;
         }
 
-        /* 導航下拉選單 (三痕漢堡選單) 滿版樣式 */
-        div[data-testid="stVerticalBlock"]:has(#mobile-top-bar-box) [data-testid="stSelectbox"] {
-            margin: 0 !important;
-            padding: 0 !important;
+        /* 三條槓按鈕樣式：點擊前只看得到三條槓 ☰ 圖案 */
+        .st-key-mobile_header_bar [data-testid="stPopover"] {
             width: 100% !important;
         }
-        div[data-testid="stVerticalBlock"]:has(#mobile-top-bar-box) [data-testid="stSelectbox"] > div {
-            background: rgba(30, 41, 59, 0.95) !important;
-            border: 1.5px solid rgba(56, 189, 248, 0.6) !important;
-            border-radius: 10px !important;
+        .st-key-mobile_header_bar [data-testid="stPopover"] > button {
+            width: 100% !important;
+            background: rgba(30, 41, 59, 0.9) !important;
+            border: 1.5px solid rgba(56, 189, 248, 0.5) !important;
+            border-radius: 8px !important;
             color: #38bdf8 !important;
-            font-weight: 700 !important;
-            font-size: 15px !important;
+            font-size: 24px !important;
+            font-weight: 900 !important;
+            height: 44px !important;
             min-height: 44px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+            padding: 0 !important;
+            line-height: 1 !important;
         }
-        div[data-testid="stVerticalBlock"]:has(#mobile-top-bar-box) [data-testid="stSelectbox"] svg {
-            fill: #38bdf8 !important;
+        /* 隱藏預設箭頭 SVG，確保點擊前只看到三條槓圖案 */
+        .st-key-mobile_header_bar [data-testid="stPopover"] > button svg {
+            display: none !important;
         }
 
-        /* 主畫面頂部預留高度，避免內容被頂部吸頂長條遮擋 */
+        /* 主畫面頂部預留高度，避免內容被頂部吸頂長條遮擋，並保留正常滑動空間 */
         .main .block-container {
-            padding-top: 75px !important;
+            padding-top: 68px !important;
             padding-bottom: 30px !important;
             padding-left: 12px !important;
             padding-right: 12px !important;
         }
     }
 
-    /* 電腦版 (螢幕寬度 >= 769px)：徹底隱藏手機版頂部吸頂導航列與任何底部導航 */
+    /* 電腦版 (螢幕寬度 >= 769px)：完全隱藏手機頂部吸頂長條與任何底部導航，確保電腦畫面 100% 正常顯示 */
     @media (min-width: 769px) {
-        div[data-testid="stVerticalBlock"]:has(#mobile-top-bar-box),
-        div:has(> div > #mobile-top-bar-box),
-        div:has(#mobile-top-bar-box),
+        .st-key-mobile_header_bar,
+        [data-testid="stElementContainer"]:has(.st-key-mobile_header_bar),
         div[data-testid="stBottom"],
         .mobile-bottom-nav {
             display: none !important;
@@ -165,9 +177,14 @@ DARK_CSS = """
             height: 0 !important;
             margin: 0 !important;
             padding: 0 !important;
+            pointer-events: none !important;
+        }
+        section[data-testid="stSidebar"] {
+            display: block !important;
+            visibility: visible !important;
         }
         .main .block-container {
-            padding-top: 2rem !important;
+            padding-top: 1.5rem !important;
             padding-bottom: 2rem !important;
         }
     }
@@ -978,7 +995,7 @@ LIGHT_CSS = """
         border: none !important;
     }
     /* ==========================================
-       響應式雙模排版：手機端頂部吸頂長方形導航 vs 電腦端側邊欄 (淺色模式)
+       響應式雙模排版：手機端頂部吸頂導航 vs 電腦端側邊欄 (淺色模式)
        ========================================== */
     /* 手機版 (螢幕寬度 <= 768px) */
     @media (max-width: 768px) {
@@ -1004,44 +1021,55 @@ LIGHT_CSS = """
             padding: 0 !important;
         }
 
-        div[data-testid="stVerticalBlock"]:has(#mobile-top-bar-box) {
+        html, body, .stApp, [data-testid="stAppViewContainer"], section.main {
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+        }
+
+        .st-key-mobile_header_bar {
             position: fixed !important;
             top: 0 !important;
             left: 0 !important;
             right: 0 !important;
             width: 100vw !important;
             max-width: 100vw !important;
-            z-index: 999999 !important;
+            z-index: 99999 !important;
             background: rgba(255, 255, 255, 0.98) !important;
             backdrop-filter: blur(20px) !important;
             -webkit-backdrop-filter: blur(20px) !important;
             border-bottom: 2px solid #0284c7 !important;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
-            padding: 8px 12px !important;
+            padding: 6px 10px !important;
             margin: 0 !important;
             box-sizing: border-box !important;
         }
 
-        div[data-testid="stVerticalBlock"]:has(#mobile-top-bar-box) [data-testid="stSelectbox"] {
-            margin: 0 !important;
-            padding: 0 !important;
+        .st-key-mobile_header_bar [data-testid="stPopover"] {
             width: 100% !important;
         }
-        div[data-testid="stVerticalBlock"]:has(#mobile-top-bar-box) [data-testid="stSelectbox"] > div {
+        .st-key-mobile_header_bar [data-testid="stPopover"] > button {
+            width: 100% !important;
             background: #f0f9ff !important;
             border: 1.5px solid #0284c7 !important;
-            border-radius: 10px !important;
-            color: #0369a1 !important;
-            font-weight: 700 !important;
-            font-size: 15px !important;
+            border-radius: 8px !important;
+            color: #0284c7 !important;
+            font-size: 24px !important;
+            font-weight: 900 !important;
+            height: 44px !important;
             min-height: 44px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+            padding: 0 !important;
+            line-height: 1 !important;
         }
-        div[data-testid="stVerticalBlock"]:has(#mobile-top-bar-box) [data-testid="stSelectbox"] svg {
-            fill: #0284c7 !important;
+        .st-key-mobile_header_bar [data-testid="stPopover"] > button svg {
+            display: none !important;
         }
 
         .main .block-container {
-            padding-top: 75px !important;
+            padding-top: 68px !important;
             padding-bottom: 30px !important;
             padding-left: 12px !important;
             padding-right: 12px !important;
@@ -1050,9 +1078,8 @@ LIGHT_CSS = """
 
     /* 電腦版 (螢幕寬度 >= 769px) */
     @media (min-width: 769px) {
-        div[data-testid="stVerticalBlock"]:has(#mobile-top-bar-box),
-        div:has(> div > #mobile-top-bar-box),
-        div:has(#mobile-top-bar-box),
+        .st-key-mobile_header_bar,
+        [data-testid="stElementContainer"]:has(.st-key-mobile_header_bar),
         div[data-testid="stBottom"],
         .mobile-bottom-nav {
             display: none !important;
@@ -1060,9 +1087,14 @@ LIGHT_CSS = """
             height: 0 !important;
             margin: 0 !important;
             padding: 0 !important;
+            pointer-events: none !important;
+        }
+        section[data-testid="stSidebar"] {
+            display: block !important;
+            visibility: visible !important;
         }
         .main .block-container {
-            padding-top: 2rem !important;
+            padding-top: 1.5rem !important;
             padding-bottom: 2rem !important;
         }
     }
@@ -2910,40 +2942,33 @@ with st.sidebar:
     st.caption(f"👤 當前帳號：{current_user['username']} ({'管理方' if is_admin else '買家'})")
 
 # ==========================================
-# 手機端專屬：頂部常駐吸頂長方形導航列 (Sticky Top Hamburger Dropdown)
-# 電腦版完全隱藏 (display: none)，手機版左右長度填滿且隨螢幕滾動常駐在畫面最頂端
+# 手機版專屬：頂部吸頂長方形導航列 (Sticky Top ☰ Popover)
+# 電腦版完全隱藏 (display: none)，手機版左右長度 100% 滿版填滿且隨螢幕滾動常駐在最頂端
+# 點開前「只看的到三條槓 ☰ 圖案」，點開後彈出完整功能下拉選單
 # ==========================================
-mobile_options_map = {}
-for item in nav_items:
-    mobile_options_map[f"☰ {item['id']}"] = item["id"]
-mobile_options_map[f"🚪 登出系統 ({current_user['username']})"] = "LOGOUT"
-
-mobile_labels = list(mobile_options_map.keys())
-current_mobile_label = next((k for k, v in mobile_options_map.items() if v == st.session_state["active_nav_menu"]), mobile_labels[0])
-current_mobile_idx = mobile_labels.index(current_mobile_label)
-
-def _on_mobile_nav_change():
-    selected_label = st.session_state.get("mobile_top_select")
-    target_action = mobile_options_map.get(selected_label)
-    if target_action == "LOGOUT":
-        st.session_state["current_user"] = None
-        st.session_state["admin_authenticated"] = False
-        st.rerun()
-    elif target_action:
-        st.session_state["active_nav_menu"] = target_action
-        st.session_state["desktop_sidebar_radio"] = target_action
-        st.rerun()
-
-with st.container():
-    st.markdown('<div id="mobile-top-bar-box"></div>', unsafe_allow_html=True)
-    st.selectbox(
-        "📱 手機端三痕功能選單",
-        mobile_labels,
-        index=current_mobile_idx,
-        key="mobile_top_select",
-        on_change=_on_mobile_nav_change,
-        label_visibility="collapsed"
-    )
+with st.container(key="mobile_header_bar"):
+    with st.popover("☰", use_container_width=True):
+        st.markdown(
+            f'''
+            <div style="font-size:13px; font-weight:700; color:{'#38bdf8' if is_admin else '#10b981'}; margin-bottom:8px;">
+                {'🛡️ 平台管理員 (店長)' if is_admin else '👤 一般使用者 (買家)'}：{current_user['username']}
+            </div>
+            ''',
+            unsafe_allow_html=True
+        )
+        st.markdown("---")
+        for item in nav_items:
+            is_active = (st.session_state["active_nav_menu"] == item["id"])
+            btn_type = "primary" if is_active else "secondary"
+            if st.button(f"{item['id']}", key=f"m_pop_item_{item['id']}", type=btn_type, use_container_width=True):
+                st.session_state["active_nav_menu"] = item["id"]
+                st.session_state["desktop_sidebar_radio"] = item["id"]
+                st.rerun()
+        st.markdown("---")
+        if st.button(f"🚪 登出系統 ({current_user['username']})", key="m_pop_logout_action", type="secondary", use_container_width=True):
+            st.session_state["current_user"] = None
+            st.session_state["admin_authenticated"] = False
+            st.rerun()
 menu = st.session_state["active_nav_menu"]
 # 安全防護：非管理員嘗試存取管理後台頁面時自動導向
 if menu in ["🧑‍💼 店長：人機對照審核台", "📊 老闆：BI 營運成效儀表板", "👥 帳號清單與權限管理", "⚙️ 系統設定 & API"] and not is_admin:
