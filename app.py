@@ -142,8 +142,9 @@ DARK_CSS = """
             padding: 0 !important;
         }
 
-        /* 三條槓按鈕：正方形外框，只看的到 ☰ 圖案 */
-        .st-key-mobile_header_bar [data-testid="stPopover"] > button {
+        /* 三條槓按鈕：正方形外框 (44px × 44px)，點開前後都只看的到 ☰ 圖案 */
+        .st-key-mobile_header_bar [data-testid="stPopover"] > button,
+        .st-key-mobile_header_bar [data-testid="stPopoverButton"] {
             width: 44px !important;
             height: 44px !important;
             min-width: 44px !important;
@@ -165,20 +166,54 @@ DARK_CSS = """
             line-height: 1 !important;
             cursor: pointer !important;
         }
-        .st-key-mobile_header_bar [data-testid="stPopover"] > button:active {
+        .st-key-mobile_header_bar [data-testid="stPopover"] > button:active,
+        .st-key-mobile_header_bar [data-testid="stPopoverButton"]:active {
             background: rgba(56, 189, 248, 0.25) !important;
             transform: scale(0.96);
         }
-        /* 隱藏預設箭頭 SVG，保證點開前只有三條槓 */
-        .st-key-mobile_header_bar [data-testid="stPopover"] > button svg {
+        /* 隱藏預設箭頭圖示 (SVG 或 Material Icon span)，保證點開前只看的到 ☰ 圖案 */
+        .st-key-mobile_header_bar [data-testid="stPopover"] button svg,
+        .st-key-mobile_header_bar [data-testid="stPopoverButton"] svg,
+        .st-key-mobile_header_bar [data-testid="stPopover"] button [data-testid="stIconMaterial"],
+        .st-key-mobile_header_bar [data-testid="stPopoverButton"] [data-testid="stIconMaterial"],
+        .st-key-mobile_header_bar [data-testid="stPopover"] button .material-symbols-rounded,
+        .st-key-mobile_header_bar [data-testid="stPopoverButton"] .material-symbols-rounded,
+        .st-key-mobile_header_bar [data-testid="stPopover"] button > div > *:nth-child(2),
+        .st-key-mobile_header_bar [data-testid="stPopoverButton"] > div > *:nth-child(2) {
             display: none !important;
+            visibility: hidden !important;
+            width: 0 !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .st-key-mobile_header_bar [data-testid="stPopover"] button > div,
+        .st-key-mobile_header_bar [data-testid="stPopoverButton"] > div {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .st-key-mobile_header_bar [data-testid="stPopover"] button p,
+        .st-key-mobile_header_bar [data-testid="stPopoverButton"] p {
+            margin: 0 !important;
+            padding: 0 !important;
+            font-size: 22px !important;
+            line-height: 1 !important;
+            font-weight: 900 !important;
         }
 
-        /* 點開後的功能下拉選單主體樣式 (保持原有清單設計，高對比懸浮) */
+        /* 點開後的功能下拉選單主體樣式 (保持原有清單設計，高對比懸浮，支援滾動) */
         div[data-testid="stPopoverBody"] {
             z-index: 1000000 !important;
             min-width: 280px !important;
             max-width: 90vw !important;
+            max-height: 85vh !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
             background: rgba(15, 23, 42, 0.98) !important;
             backdrop-filter: blur(24px) !important;
             -webkit-backdrop-filter: blur(24px) !important;
@@ -1086,7 +1121,9 @@ LIGHT_CSS = """
             padding: 0 !important;
         }
 
-        .st-key-mobile_header_bar [data-testid="stPopover"] > button {
+        /* 三條槓按鈕：正方形外框 (44px × 44px)，點開前後都只看的到 ☰ 圖案 */
+        .st-key-mobile_header_bar [data-testid="stPopover"] > button,
+        .st-key-mobile_header_bar [data-testid="stPopoverButton"] {
             width: 44px !important;
             height: 44px !important;
             min-width: 44px !important;
@@ -1108,18 +1145,54 @@ LIGHT_CSS = """
             line-height: 1 !important;
             cursor: pointer !important;
         }
-        .st-key-mobile_header_bar [data-testid="stPopover"] > button:active {
+        .st-key-mobile_header_bar [data-testid="stPopover"] > button:active,
+        .st-key-mobile_header_bar [data-testid="stPopoverButton"]:active {
             background: #e0f2fe !important;
             transform: scale(0.96);
         }
-        .st-key-mobile_header_bar [data-testid="stPopover"] > button svg {
+        /* 隱藏預設箭頭圖示 (SVG 或 Material Icon span)，保證點開前只看的到 ☰ 圖案 */
+        .st-key-mobile_header_bar [data-testid="stPopover"] button svg,
+        .st-key-mobile_header_bar [data-testid="stPopoverButton"] svg,
+        .st-key-mobile_header_bar [data-testid="stPopover"] button [data-testid="stIconMaterial"],
+        .st-key-mobile_header_bar [data-testid="stPopoverButton"] [data-testid="stIconMaterial"],
+        .st-key-mobile_header_bar [data-testid="stPopover"] button .material-symbols-rounded,
+        .st-key-mobile_header_bar [data-testid="stPopoverButton"] .material-symbols-rounded,
+        .st-key-mobile_header_bar [data-testid="stPopover"] button > div > *:nth-child(2),
+        .st-key-mobile_header_bar [data-testid="stPopoverButton"] > div > *:nth-child(2) {
             display: none !important;
+            visibility: hidden !important;
+            width: 0 !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .st-key-mobile_header_bar [data-testid="stPopover"] button > div,
+        .st-key-mobile_header_bar [data-testid="stPopoverButton"] > div {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .st-key-mobile_header_bar [data-testid="stPopover"] button p,
+        .st-key-mobile_header_bar [data-testid="stPopoverButton"] p {
+            margin: 0 !important;
+            padding: 0 !important;
+            font-size: 22px !important;
+            line-height: 1 !important;
+            font-weight: 900 !important;
         }
 
+        /* 點開後的功能下拉選單主體樣式 (保持原有清單設計，高對比懸浮，支援滾動) */
         div[data-testid="stPopoverBody"] {
             z-index: 1000000 !important;
             min-width: 280px !important;
             max-width: 90vw !important;
+            max-height: 85vh !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
             background: rgba(255, 255, 255, 0.98) !important;
             backdrop-filter: blur(24px) !important;
             -webkit-backdrop-filter: blur(24px) !important;
@@ -2957,6 +3030,9 @@ valid_nav_ids = [item["id"] for item in nav_items]
 if "active_nav_menu" not in st.session_state or st.session_state["active_nav_menu"] not in valid_nav_ids:
     st.session_state["active_nav_menu"] = valid_nav_ids[0]
 
+# 關鍵修復：在側邊欄 radio 生成前預先同步 session_state，確保完全避免 StreamlitWidgetAlreadyInstantiatedError
+st.session_state["desktop_sidebar_radio"] = st.session_state["active_nav_menu"]
+
 # --- 側邊欄（電腦端寬螢幕顯示） ---
 with st.sidebar:
     if not is_admin:
@@ -2974,15 +3050,13 @@ with st.sidebar:
         </div>
         """, unsafe_allow_html=True)
 
-    # 使用 session_state 精確同步側邊欄與底部導航
+    # 側邊欄選單切換回調：同步更新 active_nav_menu
     def _on_sidebar_change():
         st.session_state["active_nav_menu"] = st.session_state["desktop_sidebar_radio"]
 
-    sidebar_idx = valid_nav_ids.index(st.session_state["active_nav_menu"])
     st.radio(
         "📌 系統功能導航" if is_admin else "📌 買家服務選單",
         valid_nav_ids,
-        index=sidebar_idx,
         key="desktop_sidebar_radio",
         on_change=_on_sidebar_change
     )
@@ -3005,7 +3079,7 @@ with st.sidebar:
 # ==========================================
 # 手機版專屬：靠左正方形三條槓下拉選單 (44px × 44px ☰ Popover)
 # 電腦版完全隱藏 (display: none)，手機版常駐於畫面左上方正方形區塊，點開前只看的到 ☰ 圖案
-# 點開後的選單樣式維持完整清單不變
+# 點開後的選單樣式維持完整清單不變，切換選項流暢不報錯，選項不消失
 # ==========================================
 with st.container(key="mobile_header_bar"):
     with st.popover("☰", use_container_width=False):
@@ -3023,7 +3097,6 @@ with st.container(key="mobile_header_bar"):
             btn_type = "primary" if is_active else "secondary"
             if st.button(f"{item['id']}", key=f"m_pop_nav_btn_{idx}", type=btn_type, use_container_width=True):
                 st.session_state["active_nav_menu"] = item["id"]
-                st.session_state["desktop_sidebar_radio"] = item["id"]
                 st.rerun()
         st.markdown("---")
         if st.button(f"🚪 登出系統 ({current_user['username']})", key="m_pop_logout_btn_action", type="secondary", use_container_width=True):
