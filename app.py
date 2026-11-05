@@ -46,16 +46,78 @@ is_dark = ("深色" in st.session_state.get("app_theme_choice", "🌙 深色"))
 # ==========================================
 DARK_CSS = """
 <style>
-    /* 徹底隱藏 Streamlit 預設頁首、頁尾與浮水印橫條 */
-    #MainMenu {visibility: hidden !important; display: none !important;}
-    #stDecoration, [data-testid="stDecoration"] {display: none !important; visibility: hidden !important; height: 0 !important; width: 0 !important; margin: 0 !important; padding: 0 !important;}
-    [data-testid="stHeader"] {display: none !important; visibility: hidden !important; height: 0 !important;}
+    /* 保留頂部 header 但透明化，確保側邊欄展開按鈕 (stExpandSidebarButton) 隨時可用 */
+    header[data-testid="stHeader"],
+    header {
+        background: transparent !important;
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        height: 3.5rem !important;
+        pointer-events: none !important;
+        z-index: 99999 !important;
+    }
+
+    /* 隱藏無用的右上角選單、裝飾線與浮水印 */
+    #MainMenu,
+    [data-testid="stToolbar"],
+    #stDecoration,
+    [data-testid="stDecoration"],
+    [data-testid="stStatusWidget"],
+    .viewerBadge_container__r5tak,
+    .viewerBadge_link__1SuqQ {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        width: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* 確保側邊欄展開按鈕 (stExpandSidebarButton) 在側邊欄關閉後清晰可見且 100% 可點擊 */
+    header[data-testid="stHeader"] [data-testid="stExpandSidebarButton"],
+    [data-testid="stExpandSidebarButton"],
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        z-index: 100000 !important;
+    }
+
+    /* 側邊欄展開按鈕科技風格造型 */
+    [data-testid="stExpandSidebarButton"] button,
+    header[data-testid="stHeader"] [data-testid="stExpandSidebarButton"] button {
+        pointer-events: auto !important;
+        background: rgba(15, 23, 42, 0.9) !important;
+        border: 1.5px solid rgba(56, 189, 248, 0.7) !important;
+        border-radius: 8px !important;
+        color: #38bdf8 !important;
+        width: 36px !important;
+        height: 36px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5) !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+    }
+    [data-testid="stExpandSidebarButton"] button:hover {
+        background: rgba(56, 189, 248, 0.2) !important;
+        border-color: #38bdf8 !important;
+        transform: scale(1.06);
+    }
+
+    /* 確保側邊欄收折按鈕正常運作 */
+    [data-testid="stSidebarCollapseButton"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
 
     footer {visibility: hidden !important; display: none !important; height: 0 !important; max-height: 0 !important; margin: 0 !important; padding: 0 !important;}
-    header {visibility: hidden !important; display: none !important;}
-    [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
-    [data-testid="stStatusWidget"] {display: none !important;}
-    .viewerBadge_container__r5tak, .viewerBadge_link__1SuqQ {display: none !important;}
     /* 徹底銷除 Streamlit 底部白色浮水印橫條 (Built with Streamlit / Fullscreen) */
     div[class*="viewerBadge"],
     div[class*="StatusWidget"],
@@ -112,123 +174,150 @@ DARK_CSS = """
             -webkit-overflow-scrolling: touch !important;
         }
 
-        /* 手機靠左正方形三條槓按鈕區塊 (44px × 44px 正方形，固定於畫面左上方) */
-        .st-key-mobile_header_bar {
-            position: fixed !important;
-            top: 10px !important;
-            left: 12px !important;
-            width: 44px !important;
-            height: 44px !important;
-            min-width: 44px !important;
-            min-height: 44px !important;
-            max-width: 44px !important;
-            max-height: 44px !important;
-            z-index: 99999 !important;
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            box-sizing: border-box !important;
-        }
+    /* ==========================================
+       畫面上方常駐頂部導航列 + 左上角齒輪按鈕方塊 (深色模式)
+       ========================================== */
+    .st-key-top_navigation_bar {
+        position: sticky !important;
+        top: 0.5rem !important;
+        z-index: 9999 !important;
+        background: rgba(15, 23, 42, 0.92) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border: 1.5px solid rgba(56, 189, 248, 0.3) !important;
+        border-radius: 14px !important;
+        padding: 8px 12px !important;
+        margin-bottom: 16px !important;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6) !important;
+    }
 
-        .st-key-mobile_header_bar [data-testid="stPopover"] {
-            width: 44px !important;
-            height: 44px !important;
-            min-width: 44px !important;
-            min-height: 44px !important;
-            display: block !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
+    /* 左上角齒輪按鈕方塊 (44px × 44px 正方形，點開前後只看的到 ⚙️ 圖案) */
+    .st-key-top_gear_popover,
+    .st-key-top_gear_popover [data-testid="stPopover"] {
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        max-width: 44px !important;
+        max-height: 44px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block !important;
+    }
 
-        /* 三條槓按鈕：正方形外框 (44px × 44px)，點開前後都只看的到 ☰ 圖案 */
-        .st-key-mobile_header_bar [data-testid="stPopover"] > button,
-        .st-key-mobile_header_bar [data-testid="stPopoverButton"] {
-            width: 44px !important;
-            height: 44px !important;
-            min-width: 44px !important;
-            min-height: 44px !important;
-            max-width: 44px !important;
-            max-height: 44px !important;
-            aspect-ratio: 1 / 1 !important;
-            background: rgba(15, 23, 42, 0.95) !important;
-            border: 1.5px solid rgba(56, 189, 248, 0.7) !important;
-            border-radius: 10px !important;
-            color: #38bdf8 !important;
-            font-size: 22px !important;
-            font-weight: 900 !important;
+    .st-key-top_gear_popover [data-testid="stPopover"] > button,
+    .st-key-top_gear_popover [data-testid="stPopoverButton"] {
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        max-width: 44px !important;
+        max-height: 44px !important;
+        aspect-ratio: 1 / 1 !important;
+        background: rgba(15, 23, 42, 0.95) !important;
+        border: 1.5px solid rgba(56, 189, 248, 0.7) !important;
+        border-radius: 10px !important;
+        color: #38bdf8 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5) !important;
+        padding: 0 !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+    }
+    .st-key-top_gear_popover [data-testid="stPopover"] > button:hover,
+    .st-key-top_gear_popover [data-testid="stPopoverButton"]:hover {
+        background: rgba(56, 189, 248, 0.2) !important;
+        border-color: #38bdf8 !important;
+        box-shadow: 0 0 14px rgba(56, 189, 248, 0.6) !important;
+        transform: scale(1.05);
+    }
+    /* 隱藏齒輪按鈕內所有預設的箭頭圖示 (SVG 或 Material Icon span)，保證點開前只看的到 ⚙️ 圖案 */
+    .st-key-top_gear_popover [data-testid="stPopoverButton"] svg,
+    .st-key-top_gear_popover [data-testid="stPopoverButton"] [data-testid="stIconMaterial"],
+    .st-key-top_gear_popover [data-testid="stPopoverButton"] .material-symbols-rounded,
+    .st-key-top_gear_popover [data-testid="stPopoverButton"] > div > *:nth-child(2),
+    .st-key-top_gear_popover [data-testid="stPopover"] button svg,
+    .st-key-top_gear_popover [data-testid="stPopover"] button [data-testid="stIconMaterial"],
+    .st-key-top_gear_popover [data-testid="stPopover"] button .material-symbols-rounded,
+    .st-key-top_gear_popover [data-testid="stPopover"] button > div > *:nth-child(2) {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .st-key-top_gear_popover [data-testid="stPopoverButton"] > div,
+    .st-key-top_gear_popover [data-testid="stPopover"] button > div {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .st-key-top_gear_popover [data-testid="stPopoverButton"] p,
+    .st-key-top_gear_popover [data-testid="stPopover"] button p {
+        margin: 0 !important;
+        padding: 0 !important;
+        font-size: 22px !important;
+        line-height: 1 !important;
+        font-weight: 900 !important;
+    }
+
+    /* 頂部一排功能按鈕風格 */
+    .st-key-top_navigation_bar button[kind="secondary"],
+    .st-key-top_navigation_bar button[kind="primary"] {
+        border-radius: 9px !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        height: 44px !important;
+        min-height: 44px !important;
+        white-space: nowrap !important;
+        transition: all 0.2s ease !important;
+    }
+
+    /* 點開後的功能下拉選單主體樣式 (保持高對比懸浮，支援滾動) */
+    div[data-testid="stPopoverBody"] {
+        z-index: 1000000 !important;
+        min-width: 280px !important;
+        max-width: 90vw !important;
+        max-height: 85vh !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        background: rgba(15, 23, 42, 0.98) !important;
+        backdrop-filter: blur(24px) !important;
+        -webkit-backdrop-filter: blur(24px) !important;
+        border: 1.5px solid rgba(56, 189, 248, 0.5) !important;
+        border-radius: 14px !important;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85) !important;
+        padding: 14px !important;
+    }
+
+    /* 手機版橫向自適應滑動 (Chips / Tabs) */
+    @media (max-width: 768px) {
+        .st-key-top_navigation_bar [data-testid="stHorizontalBlock"] {
             display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6) !important;
-            padding: 0 !important;
-            line-height: 1 !important;
-            cursor: pointer !important;
-        }
-        .st-key-mobile_header_bar [data-testid="stPopover"] > button:active,
-        .st-key-mobile_header_bar [data-testid="stPopoverButton"]:active {
-            background: rgba(56, 189, 248, 0.25) !important;
-            transform: scale(0.96);
-        }
-        /* 隱藏預設箭頭圖示 (SVG 或 Material Icon span)，保證點開前只看的到 ☰ 圖案 */
-        .st-key-mobile_header_bar [data-testid="stPopover"] button svg,
-        .st-key-mobile_header_bar [data-testid="stPopoverButton"] svg,
-        .st-key-mobile_header_bar [data-testid="stPopover"] button [data-testid="stIconMaterial"],
-        .st-key-mobile_header_bar [data-testid="stPopoverButton"] [data-testid="stIconMaterial"],
-        .st-key-mobile_header_bar [data-testid="stPopover"] button .material-symbols-rounded,
-        .st-key-mobile_header_bar [data-testid="stPopoverButton"] .material-symbols-rounded,
-        .st-key-mobile_header_bar [data-testid="stPopover"] button > div > *:nth-child(2),
-        .st-key-mobile_header_bar [data-testid="stPopoverButton"] > div > *:nth-child(2) {
-            display: none !important;
-            visibility: hidden !important;
-            width: 0 !important;
-            height: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        .st-key-mobile_header_bar [data-testid="stPopover"] button > div,
-        .st-key-mobile_header_bar [data-testid="stPopoverButton"] > div {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            width: 100% !important;
-            height: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        .st-key-mobile_header_bar [data-testid="stPopover"] button p,
-        .st-key-mobile_header_bar [data-testid="stPopoverButton"] p {
-            margin: 0 !important;
-            padding: 0 !important;
-            font-size: 22px !important;
-            line-height: 1 !important;
-            font-weight: 900 !important;
-        }
-
-        /* 點開後的功能下拉選單主體樣式 (保持原有清單設計，高對比懸浮，支援滾動) */
-        div[data-testid="stPopoverBody"] {
-            z-index: 1000000 !important;
-            min-width: 280px !important;
-            max-width: 90vw !important;
-            max-height: 85vh !important;
-            overflow-y: auto !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
             -webkit-overflow-scrolling: touch !important;
-            background: rgba(15, 23, 42, 0.98) !important;
-            backdrop-filter: blur(24px) !important;
-            -webkit-backdrop-filter: blur(24px) !important;
-            border: 1.5px solid rgba(56, 189, 248, 0.5) !important;
-            border-radius: 14px !important;
-            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85) !important;
-            padding: 14px !important;
+            gap: 6px !important;
+            padding-bottom: 2px !important;
+            align-items: center !important;
         }
-
-        /* 主畫面頂部預留高度，避免內容與左上角正方形按鈕重疊 */
-        .main .block-container {
-            padding-top: 58px !important;
-            padding-bottom: 30px !important;
-            padding-left: 14px !important;
-            padding-right: 14px !important;
+        .st-key-top_navigation_bar [data-testid="stColumn"] {
+            flex: 0 0 auto !important;
+            min-width: fit-content !important;
+            width: auto !important;
+        }
+        .st-key-top_navigation_bar button {
+            white-space: nowrap !important;
+            font-size: 13px !important;
+            padding: 4px 10px !important;
         }
     }
 
@@ -1029,16 +1118,78 @@ DARK_CSS = """
 # ==========================================
 LIGHT_CSS = """
 <style>
-    /* 徹底隱藏 Streamlit 預設頁首、頁尾與浮水印橫條 */
-    #MainMenu {visibility: hidden !important; display: none !important;}
-    #stDecoration, [data-testid="stDecoration"] {display: none !important; visibility: hidden !important; height: 0 !important; width: 0 !important; margin: 0 !important; padding: 0 !important;}
-    [data-testid="stHeader"] {display: none !important; visibility: hidden !important; height: 0 !important;}
+    /* 保留頂部 header 但透明化，確保側邊欄展開按鈕 (stExpandSidebarButton) 隨時可用 */
+    header[data-testid="stHeader"],
+    header {
+        background: transparent !important;
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        height: 3.5rem !important;
+        pointer-events: none !important;
+        z-index: 99999 !important;
+    }
+
+    /* 隱藏無用的右上角選單、裝飾線與浮水印 */
+    #MainMenu,
+    [data-testid="stToolbar"],
+    #stDecoration,
+    [data-testid="stDecoration"],
+    [data-testid="stStatusWidget"],
+    .viewerBadge_container__r5tak,
+    .viewerBadge_link__1SuqQ {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        width: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* 確保側邊欄展開按鈕 (stExpandSidebarButton) 在側邊欄關閉後清晰可見且 100% 可點擊 */
+    header[data-testid="stHeader"] [data-testid="stExpandSidebarButton"],
+    [data-testid="stExpandSidebarButton"],
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        z-index: 100000 !important;
+    }
+
+    /* 側邊欄展開按鈕簡約清爽淺色風格造型 */
+    [data-testid="stExpandSidebarButton"] button,
+    header[data-testid="stHeader"] [data-testid="stExpandSidebarButton"] button {
+        pointer-events: auto !important;
+        background: #ffffff !important;
+        border: 1.5px solid #0284c7 !important;
+        border-radius: 8px !important;
+        color: #0284c7 !important;
+        width: 36px !important;
+        height: 36px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1) !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+    }
+    [data-testid="stExpandSidebarButton"] button:hover {
+        background: #e0f2fe !important;
+        border-color: #0284c7 !important;
+        transform: scale(1.06);
+    }
+
+    /* 確保側邊欄收折按鈕正常運作 */
+    [data-testid="stSidebarCollapseButton"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
 
     footer {visibility: hidden !important; display: none !important; height: 0 !important; max-height: 0 !important; margin: 0 !important; padding: 0 !important;}
-    header {visibility: hidden !important; display: none !important;}
-    [data-testid="stToolbar"] {visibility: hidden !important; display: none !important;}
-    [data-testid="stStatusWidget"] {display: none !important;}
-    .viewerBadge_container__r5tak, .viewerBadge_link__1SuqQ {display: none !important;}
     /* 徹底銷除 Streamlit 底部白色浮水印橫條 (Built with Streamlit / Fullscreen) */
     div[class*="viewerBadge"],
     div[class*="StatusWidget"],
@@ -1092,122 +1243,147 @@ LIGHT_CSS = """
             -webkit-overflow-scrolling: touch !important;
         }
 
-        .st-key-mobile_header_bar {
-            position: fixed !important;
-            top: 10px !important;
-            left: 12px !important;
-            width: 44px !important;
-            height: 44px !important;
-            min-width: 44px !important;
-            min-height: 44px !important;
-            max-width: 44px !important;
-            max-height: 44px !important;
-            z-index: 99999 !important;
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            box-sizing: border-box !important;
-        }
+    /* ==========================================
+       畫面上方常駐頂部導航列 + 左上角齒輪按鈕方塊 (淺色模式)
+       ========================================== */
+    .st-key-top_navigation_bar {
+        position: sticky !important;
+        top: 0.5rem !important;
+        z-index: 9999 !important;
+        background: rgba(255, 255, 255, 0.94) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border: 1.5px solid rgba(2, 132, 199, 0.25) !important;
+        border-radius: 14px !important;
+        padding: 8px 12px !important;
+        margin-bottom: 16px !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+    }
 
-        .st-key-mobile_header_bar [data-testid="stPopover"] {
-            width: 44px !important;
-            height: 44px !important;
-            min-width: 44px !important;
-            min-height: 44px !important;
-            display: block !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
+    .st-key-top_gear_popover,
+    .st-key-top_gear_popover [data-testid="stPopover"] {
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        max-width: 44px !important;
+        max-height: 44px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block !important;
+    }
 
-        /* 三條槓按鈕：正方形外框 (44px × 44px)，點開前後都只看的到 ☰ 圖案 */
-        .st-key-mobile_header_bar [data-testid="stPopover"] > button,
-        .st-key-mobile_header_bar [data-testid="stPopoverButton"] {
-            width: 44px !important;
-            height: 44px !important;
-            min-width: 44px !important;
-            min-height: 44px !important;
-            max-width: 44px !important;
-            max-height: 44px !important;
-            aspect-ratio: 1 / 1 !important;
-            background: #ffffff !important;
-            border: 1.5px solid #0284c7 !important;
-            border-radius: 10px !important;
-            color: #0284c7 !important;
-            font-size: 22px !important;
-            font-weight: 900 !important;
+    .st-key-top_gear_popover [data-testid="stPopover"] > button,
+    .st-key-top_gear_popover [data-testid="stPopoverButton"] {
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        max-width: 44px !important;
+        max-height: 44px !important;
+        aspect-ratio: 1 / 1 !important;
+        background: #ffffff !important;
+        border: 1.5px solid #0284c7 !important;
+        border-radius: 10px !important;
+        color: #0284c7 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1) !important;
+        padding: 0 !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+    }
+    .st-key-top_gear_popover [data-testid="stPopover"] > button:hover,
+    .st-key-top_gear_popover [data-testid="stPopoverButton"]:hover {
+        background: #e0f2fe !important;
+        border-color: #0284c7 !important;
+        transform: scale(1.05);
+    }
+
+    .st-key-top_gear_popover [data-testid="stPopoverButton"] svg,
+    .st-key-top_gear_popover [data-testid="stPopoverButton"] [data-testid="stIconMaterial"],
+    .st-key-top_gear_popover [data-testid="stPopoverButton"] .material-symbols-rounded,
+    .st-key-top_gear_popover [data-testid="stPopoverButton"] > div > *:nth-child(2),
+    .st-key-top_gear_popover [data-testid="stPopover"] button svg,
+    .st-key-top_gear_popover [data-testid="stPopover"] button [data-testid="stIconMaterial"],
+    .st-key-top_gear_popover [data-testid="stPopover"] button .material-symbols-rounded,
+    .st-key-top_gear_popover [data-testid="stPopover"] button > div > *:nth-child(2) {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .st-key-top_gear_popover [data-testid="stPopoverButton"] > div,
+    .st-key-top_gear_popover [data-testid="stPopover"] button > div {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .st-key-top_gear_popover [data-testid="stPopoverButton"] p,
+    .st-key-top_gear_popover [data-testid="stPopover"] button p {
+        margin: 0 !important;
+        padding: 0 !important;
+        font-size: 22px !important;
+        line-height: 1 !important;
+        font-weight: 900 !important;
+    }
+
+    .st-key-top_navigation_bar button[kind="secondary"],
+    .st-key-top_navigation_bar button[kind="primary"] {
+        border-radius: 9px !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        height: 44px !important;
+        min-height: 44px !important;
+        white-space: nowrap !important;
+        transition: all 0.2s ease !important;
+    }
+
+    div[data-testid="stPopoverBody"] {
+        z-index: 1000000 !important;
+        min-width: 280px !important;
+        max-width: 90vw !important;
+        max-height: 85vh !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        background: rgba(255, 255, 255, 0.98) !important;
+        backdrop-filter: blur(24px) !important;
+        -webkit-backdrop-filter: blur(24px) !important;
+        border: 1.5px solid #0284c7 !important;
+        border-radius: 14px !important;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.15) !important;
+        padding: 14px !important;
+    }
+
+    @media (max-width: 768px) {
+        .st-key-top_navigation_bar [data-testid="stHorizontalBlock"] {
             display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12) !important;
-            padding: 0 !important;
-            line-height: 1 !important;
-            cursor: pointer !important;
-        }
-        .st-key-mobile_header_bar [data-testid="stPopover"] > button:active,
-        .st-key-mobile_header_bar [data-testid="stPopoverButton"]:active {
-            background: #e0f2fe !important;
-            transform: scale(0.96);
-        }
-        /* 隱藏預設箭頭圖示 (SVG 或 Material Icon span)，保證點開前只看的到 ☰ 圖案 */
-        .st-key-mobile_header_bar [data-testid="stPopover"] button svg,
-        .st-key-mobile_header_bar [data-testid="stPopoverButton"] svg,
-        .st-key-mobile_header_bar [data-testid="stPopover"] button [data-testid="stIconMaterial"],
-        .st-key-mobile_header_bar [data-testid="stPopoverButton"] [data-testid="stIconMaterial"],
-        .st-key-mobile_header_bar [data-testid="stPopover"] button .material-symbols-rounded,
-        .st-key-mobile_header_bar [data-testid="stPopoverButton"] .material-symbols-rounded,
-        .st-key-mobile_header_bar [data-testid="stPopover"] button > div > *:nth-child(2),
-        .st-key-mobile_header_bar [data-testid="stPopoverButton"] > div > *:nth-child(2) {
-            display: none !important;
-            visibility: hidden !important;
-            width: 0 !important;
-            height: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        .st-key-mobile_header_bar [data-testid="stPopover"] button > div,
-        .st-key-mobile_header_bar [data-testid="stPopoverButton"] > div {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            width: 100% !important;
-            height: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        .st-key-mobile_header_bar [data-testid="stPopover"] button p,
-        .st-key-mobile_header_bar [data-testid="stPopoverButton"] p {
-            margin: 0 !important;
-            padding: 0 !important;
-            font-size: 22px !important;
-            line-height: 1 !important;
-            font-weight: 900 !important;
-        }
-
-        /* 點開後的功能下拉選單主體樣式 (保持原有清單設計，高對比懸浮，支援滾動) */
-        div[data-testid="stPopoverBody"] {
-            z-index: 1000000 !important;
-            min-width: 280px !important;
-            max-width: 90vw !important;
-            max-height: 85vh !important;
-            overflow-y: auto !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
             -webkit-overflow-scrolling: touch !important;
-            background: rgba(255, 255, 255, 0.98) !important;
-            backdrop-filter: blur(24px) !important;
-            -webkit-backdrop-filter: blur(24px) !important;
-            border: 1.5px solid #0284c7 !important;
-            border-radius: 14px !important;
-            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.15) !important;
-            padding: 14px !important;
+            gap: 6px !important;
+            padding-bottom: 2px !important;
+            align-items: center !important;
         }
-
-        .main .block-container {
-            padding-top: 58px !important;
-            padding-bottom: 30px !important;
-            padding-left: 14px !important;
-            padding-right: 14px !important;
+        .st-key-top_navigation_bar [data-testid="stColumn"] {
+            flex: 0 0 auto !important;
+            min-width: fit-content !important;
+            width: auto !important;
         }
+        .st-key-top_navigation_bar button {
+            white-space: nowrap !important;
+            font-size: 13px !important;
+            padding: 4px 10px !important;
+        }
+    }
     }
 
     /* 電腦版 (螢幕寬度 >= 769px) */
@@ -2887,14 +3063,15 @@ if "current_user" not in st.session_state:
 
 current_user = st.session_state.get("current_user")
 
-# 側邊欄最頂部：深色/淺色主題風格即時切換
-st.sidebar.radio(
-    "深色/淺色",
-    ["🌙 深色", "☀️ 淺色"],
-    key="app_theme_choice",
-    horizontal=True
-)
-st.sidebar.markdown("---")
+# 未登入時側邊欄提供深色/淺色主題風格即時切換；登入後整合至左上角齒輪按鈕
+if current_user is None:
+    st.sidebar.radio(
+        "深色/淺色",
+        ["🌙 深色", "☀️ 淺色"],
+        key="app_theme_choice",
+        horizontal=True
+    )
+    st.sidebar.markdown("---")
 
 if current_user is None:
     # 未登入狀態：側邊欄提示
@@ -3008,23 +3185,23 @@ if current_user is None:
 is_admin = (current_user["role"] == "admin")
 st.session_state["admin_authenticated"] = is_admin
 
-# 導航選項與圖示配置 (支援手機底部導航列與電腦側邊欄雙模雙軌聯動)
+# 畫面上方功能按鈕配置 (依身分角色分流；「系統設定」依需求獨立收納至左上角齒輪按鈕)
 if not is_admin:
-    nav_items = [
+    top_nav_items = [
         {"id": "📝 買家：提交退換貨申請", "label": "退換申請", "icon": "📝"},
         {"id": "🔍 買家：查詢進度 / 補充照片", "label": "進度查詢", "icon": "🔍"}
     ]
+    valid_nav_ids = [item["id"] for item in top_nav_items]
 else:
-    nav_items = [
-        {"id": "🧑‍💼 店長：人機對照審核台", "label": "審核台", "icon": "🧑‍💼"},
-        {"id": "📊 老闆：BI 營運成效儀表板", "label": "BI儀表板", "icon": "📊"},
-        {"id": "👥 帳號清單與權限管理", "label": "會員權限", "icon": "👥"},
-        {"id": "⚙️ 系統設定 & API", "label": "系統設定", "icon": "⚙️"},
+    top_nav_items = [
+        {"id": "🧑‍💼 店長：人機對照審核台", "label": "店長審核台", "icon": "🧑‍💼"},
+        {"id": "📊 老闆：BI 營運成效儀表板", "label": "BI 儀表板", "icon": "📊"},
+        {"id": "👥 帳號清單與權限管理", "label": "帳號權限", "icon": "👥"},
         {"id": "📝 買家：提交退換貨申請", "label": "買家申請", "icon": "📝"},
-        {"id": "🔍 買家：查詢進度 / 補充照片", "label": "買家進度", "icon": "🔍"}
+        {"id": "🔍 買家：查詢進度 / 補充照片", "label": "進度查詢", "icon": "🔍"}
     ]
-
-valid_nav_ids = [item["id"] for item in nav_items]
+    # 所有合法導航目標 (包含從左上角齒輪按鈕進入的系統設定 & API)
+    valid_nav_ids = [item["id"] for item in top_nav_items] + ["⚙️ 系統設定 & API"]
 
 # 初始化當前選取頁面狀態
 if "active_nav_menu" not in st.session_state or st.session_state["active_nav_menu"] not in valid_nav_ids:
@@ -3033,7 +3210,7 @@ if "active_nav_menu" not in st.session_state or st.session_state["active_nav_men
 # 關鍵修復：在側邊欄 radio 生成前預先同步 session_state，確保完全避免 StreamlitWidgetAlreadyInstantiatedError
 st.session_state["desktop_sidebar_radio"] = st.session_state["active_nav_menu"]
 
-# --- 側邊欄（電腦端寬螢幕顯示） ---
+# --- 側邊欄（電腦端寬螢幕顯示，提供快速導航與系統資訊） ---
 with st.sidebar:
     if not is_admin:
         st.markdown(f"""
@@ -3055,7 +3232,7 @@ with st.sidebar:
         st.session_state["active_nav_menu"] = st.session_state["desktop_sidebar_radio"]
 
     st.radio(
-        "📌 系統功能導航" if is_admin else "📌 買家服務選單",
+        "📌 快捷功能導航",
         valid_nav_ids,
         key="desktop_sidebar_radio",
         on_change=_on_sidebar_change
@@ -3077,32 +3254,70 @@ with st.sidebar:
     st.caption(f"👤 當前帳號：{current_user['username']} ({'管理方' if is_admin else '買家'})")
 
 # ==========================================
-# 手機版專屬：靠左正方形三條槓下拉選單 (44px × 44px ☰ Popover)
-# 電腦版完全隱藏 (display: none)，手機版常駐於畫面左上方正方形區塊，點開前只看的到 ☰ 圖案
-# 點開後的選單樣式維持完整清單不變，切換選項流暢不報錯，選項不消失
+# 畫面上方常駐頂部導航列：
+# 1. 畫面左上角：齒輪圖案按鈕方塊 (整合系統設定與背景顏色切換)
+# 2. 畫面上方：一排功能選單按鈕 (點擊即時切換頁面並高亮顯示)
 # ==========================================
-with st.container(key="mobile_header_bar"):
-    with st.popover("☰", use_container_width=False):
-        st.markdown(
-            f'''
-            <div style="font-size:13px; font-weight:700; color:{'#38bdf8' if is_admin else '#10b981'}; margin-bottom:8px;">
-                {'🛡️ 平台管理員 (店長)' if is_admin else '👤 一般使用者 (買家)'}：{current_user['username']}
-            </div>
-            ''',
-            unsafe_allow_html=True
-        )
-        st.markdown("---")
-        for idx, item in enumerate(nav_items):
+with st.container(key="top_navigation_bar"):
+    if is_admin:
+        top_cols = st.columns([0.65, 2.2, 2.2, 2.2, 2.2, 2.2])
+    else:
+        top_cols = st.columns([0.65, 4.5, 4.5])
+
+    # 1. 畫面左上角：齒輪圖案按鈕方塊
+    with top_cols[0]:
+        with st.container(key="top_gear_popover"):
+            with st.popover("⚙️", help="外觀風格與系統偏好設定"):
+                st.markdown(f'''
+                <div style="font-size:14px; font-weight:700; color:{'#38bdf8' if is_admin else '#10b981'}; margin-bottom:4px;">
+                    ⚙️ 偏好設定與系統控制
+                </div>
+                <div style="font-size:12px; color:#94a3b8; margin-bottom:10px;">
+                    登入帳號：<b>{current_user['username']}</b> ({'平台管理員' if is_admin else '一般買家'})
+                </div>
+                ''', unsafe_allow_html=True)
+                st.markdown("---")
+
+                # 背景顏色設定 (深色 / 淺色 即時切換)
+                st.markdown("**🎨 背景顏色設定**")
+                curr_theme_idx = 0 if is_dark else 1
+                theme_pick = st.radio(
+                    "色彩風格",
+                    ["🌙 深色", "☀️ 淺色"],
+                    index=curr_theme_idx,
+                    horizontal=True,
+                    key="gear_theme_radio",
+                    label_visibility="collapsed"
+                )
+                if theme_pick != st.session_state.get("app_theme_choice"):
+                    st.session_state["app_theme_choice"] = theme_pick
+                    st.rerun()
+
+                # 系統設定 (管理員專屬)
+                if is_admin:
+                    st.markdown("---")
+                    st.markdown("**🛠️ 核心系統設定**")
+                    is_settings_active = (st.session_state["active_nav_menu"] == "⚙️ 系統設定 & API")
+                    if st.button("⚙️ 系統設定 & API (Gemini / SMTP)", key="gear_btn_settings", type="primary" if is_settings_active else "secondary", use_container_width=True):
+                        st.session_state["active_nav_menu"] = "⚙️ 系統設定 & API"
+                        st.rerun()
+
+                # 登出系統
+                st.markdown("---")
+                if st.button(f"🚪 登出系統 ({current_user['username']})", key="gear_btn_logout", type="secondary", use_container_width=True):
+                    st.session_state["current_user"] = None
+                    st.session_state["admin_authenticated"] = False
+                    st.rerun()
+
+    # 2. 畫面上方：一排功能選單按鈕
+    for idx, item in enumerate(top_nav_items):
+        with top_cols[idx + 1]:
             is_active = (st.session_state["active_nav_menu"] == item["id"])
             btn_type = "primary" if is_active else "secondary"
-            if st.button(f"{item['id']}", key=f"m_pop_nav_btn_{idx}", type=btn_type, use_container_width=True):
+            if st.button(item["id"], key=f"top_nav_btn_{idx}", type=btn_type, use_container_width=True):
                 st.session_state["active_nav_menu"] = item["id"]
                 st.rerun()
-        st.markdown("---")
-        if st.button(f"🚪 登出系統 ({current_user['username']})", key="m_pop_logout_btn_action", type="secondary", use_container_width=True):
-            st.session_state["current_user"] = None
-            st.session_state["admin_authenticated"] = False
-            st.rerun()
+
 menu = st.session_state["active_nav_menu"]
 # 安全防護：非管理員嘗試存取管理後台頁面時自動導向
 if menu in ["🧑‍💼 店長：人機對照審核台", "📊 老闆：BI 營運成效儀表板", "👥 帳號清單與權限管理", "⚙️ 系統設定 & API"] and not is_admin:
