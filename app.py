@@ -32,7 +32,7 @@ st.set_page_config(
     page_title="電腦周邊售後風控平台 · 買家門戶與後台系統",
     page_icon="🛡️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # 初始化主題設定 (預設為深色，使用者可隨時由側邊欄切換為淺色)
@@ -46,231 +46,116 @@ is_dark = ("深色" in st.session_state.get("app_theme_choice", "🌙 深色"))
 # ==========================================
 DARK_CSS = """
 <style>
-    /* 保留頂部 header 但透明化，確保側邊欄展開按鈕 (stExpandSidebarButton) 隨時可用 */
+        /* 隱藏頂部 header 與所有無用的右上角選單、裝飾線與浮水印 */
     header[data-testid="stHeader"],
-    header {
-        background: transparent !important;
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        height: 3.5rem !important;
-        pointer-events: none !important;
-        z-index: 99999 !important;
-    }
-
-    /* 隱藏無用的右上角選單、裝飾線與浮水印 */
+    header,
     #MainMenu,
     [data-testid="stToolbar"],
     #stDecoration,
     [data-testid="stDecoration"],
     [data-testid="stStatusWidget"],
     .viewerBadge_container__r5tak,
-    .viewerBadge_link__1SuqQ {
+    .viewerBadge_link__1SuqQ,
+    footer,
+    div[class*="viewerBadge"],
+    div[class*="StatusWidget"],
+    div[class*="FloatingContainer"],
+    footer[class*="footer"],
+    [data-testid="stFooter"] {
         display: none !important;
         visibility: hidden !important;
         height: 0 !important;
         width: 0 !important;
         margin: 0 !important;
         padding: 0 !important;
-    }
-
-    /* 確保側邊欄展開按鈕 (stExpandSidebarButton) 在側邊欄關閉後清晰可見且 100% 可點擊 */
-    header[data-testid="stHeader"] [data-testid="stExpandSidebarButton"],
-    [data-testid="stExpandSidebarButton"],
-    [data-testid="stSidebarCollapsedControl"],
-    [data-testid="collapsedControl"] {
-        display: flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        pointer-events: auto !important;
-        z-index: 100000 !important;
-    }
-
-    /* 側邊欄展開按鈕科技風格造型 */
-    [data-testid="stExpandSidebarButton"] button,
-    header[data-testid="stHeader"] [data-testid="stExpandSidebarButton"] button {
-        pointer-events: auto !important;
-        background: rgba(15, 23, 42, 0.9) !important;
-        border: 1.5px solid rgba(56, 189, 248, 0.7) !important;
-        border-radius: 8px !important;
-        color: #38bdf8 !important;
-        width: 36px !important;
-        height: 36px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5) !important;
-        cursor: pointer !important;
-        transition: all 0.2s ease !important;
-    }
-    [data-testid="stExpandSidebarButton"] button:hover {
-        background: rgba(56, 189, 248, 0.2) !important;
-        border-color: #38bdf8 !important;
-        transform: scale(1.06);
-    }
-
-    /* 確保側邊欄收折按鈕正常運作 */
-    [data-testid="stSidebarCollapseButton"] {
-        display: flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        pointer-events: auto !important;
-    }
-
-    footer {visibility: hidden !important; display: none !important; height: 0 !important; max-height: 0 !important; margin: 0 !important; padding: 0 !important;}
-    /* 徹底銷除 Streamlit 底部白色浮水印橫條 (Built with Streamlit / Fullscreen) */
-    div[class*="viewerBadge"],
-    div[class*="StatusWidget"],
-    div[class*="FloatingContainer"],
-    footer[class*="footer"],
-    div[data-testid="stDecoration"],
-    [data-testid="stFooter"] {
-        display: none !important;
-        visibility: hidden !important;
-        height: 0 !important;
         opacity: 0 !important;
         pointer-events: none !important;
     }
 
-    /* === 消除外層白邊（只針對 html/body，不影響 sidebar/content 佈局） === */
+    /* 完全刪除與徹底隱藏側邊欄及任何側邊欄展開/收折按鈕 (所有裝置螢幕尺寸通用) */
+    section[data-testid="stSidebar"],
+    [data-testid="stSidebar"],
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"],
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="stExpandSidebarButton"],
+    .st-key-mobile_header_bar,
+    [data-testid="stElementContainer"]:has(.st-key-mobile_header_bar),
+    div[data-testid="stBottom"],
+    .mobile-bottom-nav {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        min-width: 0 !important;
+        max-width: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+        pointer-events: none !important;
+    }
+
+    /* 消除外層白邊與滾動設定 */
     html, body {
         margin: 0 !important;
         padding: 0 !important;
         overflow-x: hidden !important;
         border: none !important;
     }
-    /* ==========================================
-       響應式雙模排版：手機端靠左正方形三條槓導航 vs 電腦端側邊欄 (深色模式)
-       ========================================== */
-    /* 手機版 (螢幕寬度 <= 768px) */
-    @media (max-width: 768px) {
-        /* 手機模式：隱藏電腦側邊欄與其收折鈕 */
-        section[data-testid="stSidebar"],
-        [data-testid="stSidebar"],
-        [data-testid="collapsedControl"],
-        [data-testid="stSidebarCollapseButton"] {
-            display: none !important;
-            visibility: hidden !important;
-            width: 0 !important;
-            min-width: 0 !important;
-            max-width: 0 !important;
-            position: absolute !important;
-            left: -9999px !important;
-        }
-        
-        /* 隱藏舊式底部導航列與多餘元件 */
-        div[data-testid="stBottom"],
-        .mobile-bottom-nav {
-            display: none !important;
-            visibility: hidden !important;
-            height: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
 
-        /* 確保手機畫面自然流暢垂直滑動 */
-        html, body, .stApp, [data-testid="stAppViewContainer"], section.main {
-            overflow-y: auto !important;
-            -webkit-overflow-scrolling: touch !important;
-        }
+    /* 確保手機與電腦畫面自然流暢垂直滑動 */
+    html, body, .stApp, [data-testid="stAppViewContainer"], section.main {
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        transform: none !important;
+    }
 
     /* ==========================================
-       畫面上方常駐頂部導航列 + 左上角齒輪按鈕方塊 (深色模式)
+       畫面上方常駐置頂固定黏濁導航列 (深色模式)
+       無論怎麼上下滑動，皆牢牢固定在畫面頂端同一位置跟著螢幕移動
        ========================================== */
     .st-key-top_navigation_bar {
-        position: sticky !important;
-        top: 0.5rem !important;
-        z-index: 9999 !important;
-        background: rgba(15, 23, 42, 0.92) !important;
-        backdrop-filter: blur(16px) !important;
-        -webkit-backdrop-filter: blur(16px) !important;
-        border: 1.5px solid rgba(56, 189, 248, 0.3) !important;
-        border-radius: 14px !important;
-        padding: 8px 12px !important;
-        margin-bottom: 16px !important;
-        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6) !important;
-    }
-
-    /* 左上角齒輪按鈕方塊 (44px × 44px 正方形，點開前後只看的到 ⚙️ 圖案) */
-    .st-key-top_gear_popover,
-    .st-key-top_gear_popover [data-testid="stPopover"] {
-        width: 44px !important;
-        height: 44px !important;
-        min-width: 44px !important;
-        min-height: 44px !important;
-        max-width: 44px !important;
-        max-height: 44px !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        z-index: 999999 !important;
+        background: rgba(15, 23, 42, 0.96) !important;
+        backdrop-filter: blur(24px) !important;
+        -webkit-backdrop-filter: blur(24px) !important;
+        border-bottom: 1.5px solid rgba(56, 189, 248, 0.45) !important;
+        border-top: none !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-radius: 0 0 16px 16px !important;
+        padding: 8px 16px !important;
         margin: 0 !important;
-        padding: 0 !important;
-        display: block !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.75) !important;
+        box-sizing: border-box !important;
     }
 
-    .st-key-top_gear_popover [data-testid="stPopover"] > button,
-    .st-key-top_gear_popover [data-testid="stPopoverButton"] {
+    /* 左上角齒輪按鈕方塊 (44px × 44px 正方形獨立按鈕，點擊進入獨立設定畫面區) */
+    .st-key-top_navigation_bar [data-testid="stColumn"]:first-child button {
         width: 44px !important;
-        height: 44px !important;
         min-width: 44px !important;
-        min-height: 44px !important;
         max-width: 44px !important;
+        height: 44px !important;
+        min-height: 44px !important;
         max-height: 44px !important;
         aspect-ratio: 1 / 1 !important;
-        background: rgba(15, 23, 42, 0.95) !important;
-        border: 1.5px solid rgba(56, 189, 248, 0.7) !important;
         border-radius: 10px !important;
-        color: #38bdf8 !important;
+        font-size: 20px !important;
+        line-height: 1 !important;
+        padding: 0 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5) !important;
-        padding: 0 !important;
         cursor: pointer !important;
         transition: all 0.2s ease !important;
     }
-    .st-key-top_gear_popover [data-testid="stPopover"] > button:hover,
-    .st-key-top_gear_popover [data-testid="stPopoverButton"]:hover {
-        background: rgba(56, 189, 248, 0.2) !important;
-        border-color: #38bdf8 !important;
-        box-shadow: 0 0 14px rgba(56, 189, 248, 0.6) !important;
-        transform: scale(1.05);
-    }
-    /* 隱藏齒輪按鈕內所有預設的箭頭圖示 (SVG 或 Material Icon span)，保證點開前只看的到 ⚙️ 圖案 */
-    .st-key-top_gear_popover [data-testid="stPopoverButton"] svg,
-    .st-key-top_gear_popover [data-testid="stPopoverButton"] [data-testid="stIconMaterial"],
-    .st-key-top_gear_popover [data-testid="stPopoverButton"] .material-symbols-rounded,
-    .st-key-top_gear_popover [data-testid="stPopoverButton"] > div > *:nth-child(2),
-    .st-key-top_gear_popover [data-testid="stPopover"] button svg,
-    .st-key-top_gear_popover [data-testid="stPopover"] button [data-testid="stIconMaterial"],
-    .st-key-top_gear_popover [data-testid="stPopover"] button .material-symbols-rounded,
-    .st-key-top_gear_popover [data-testid="stPopover"] button > div > *:nth-child(2) {
-        display: none !important;
-        visibility: hidden !important;
-        width: 0 !important;
-        height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    .st-key-top_gear_popover [data-testid="stPopoverButton"] > div,
-    .st-key-top_gear_popover [data-testid="stPopover"] button > div {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        width: 100% !important;
-        height: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    .st-key-top_gear_popover [data-testid="stPopoverButton"] p,
-    .st-key-top_gear_popover [data-testid="stPopover"] button p {
-        margin: 0 !important;
-        padding: 0 !important;
-        font-size: 22px !important;
-        line-height: 1 !important;
-        font-weight: 900 !important;
-    }
 
-    /* 頂部一排功能按鈕風格 */
-    .st-key-top_navigation_bar button[kind="secondary"],
-    .st-key-top_navigation_bar button[kind="primary"] {
+    /* 頂部一排功能選單按鈕風格 (深色模式) */
+    .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button {
         border-radius: 9px !important;
         font-size: 14px !important;
         font-weight: 600 !important;
@@ -280,24 +165,14 @@ DARK_CSS = """
         transition: all 0.2s ease !important;
     }
 
-    /* 點開後的功能下拉選單主體樣式 (保持高對比懸浮，支援滾動) */
-    div[data-testid="stPopoverBody"] {
-        z-index: 1000000 !important;
-        min-width: 280px !important;
-        max-width: 90vw !important;
-        max-height: 85vh !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-        background: rgba(15, 23, 42, 0.98) !important;
-        backdrop-filter: blur(24px) !important;
-        -webkit-backdrop-filter: blur(24px) !important;
-        border: 1.5px solid rgba(56, 189, 248, 0.5) !important;
-        border-radius: 14px !important;
-        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85) !important;
-        padding: 14px !important;
+    /* 確保固定頂部導航列不遮擋下方主內容區塊 */
+    .main .block-container {
+        padding-top: 86px !important;
+        padding-bottom: 2rem !important;
+        max-width: 100% !important;
     }
 
-    /* 手機版橫向自適應滑動 (Chips / Tabs) */
+    /* 手機版橫向自適應滑動 (Chips / Tabs) (<= 768px) */
     @media (max-width: 768px) {
         .st-key-top_navigation_bar [data-testid="stHorizontalBlock"] {
             display: flex !important;
@@ -314,32 +189,23 @@ DARK_CSS = """
             min-width: fit-content !important;
             width: auto !important;
         }
-        .st-key-top_navigation_bar button {
+        .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button {
             white-space: nowrap !important;
             font-size: 13px !important;
             padding: 4px 10px !important;
         }
+        .main .block-container {
+            padding-top: 82px !important;
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+            padding-bottom: 2rem !important;
+        }
     }
 
-    /* 電腦版 (螢幕寬度 >= 769px)：完全隱藏手機三條槓按鈕與任何底部導航，確保電腦畫面 100% 正常顯示 */
+    /* 電腦版 (螢幕寬度 >= 769px) */
     @media (min-width: 769px) {
-        .st-key-mobile_header_bar,
-        [data-testid="stElementContainer"]:has(.st-key-mobile_header_bar),
-        div[data-testid="stBottom"],
-        .mobile-bottom-nav {
-            display: none !important;
-            visibility: hidden !important;
-            height: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            pointer-events: none !important;
-        }
-        section[data-testid="stSidebar"] {
-            display: block !important;
-            visibility: visible !important;
-        }
         .main .block-container {
-            padding-top: 1.5rem !important;
+            padding-top: 86px !important;
             padding-bottom: 2rem !important;
         }
     }
@@ -1118,225 +984,116 @@ DARK_CSS = """
 # ==========================================
 LIGHT_CSS = """
 <style>
-    /* 保留頂部 header 但透明化，確保側邊欄展開按鈕 (stExpandSidebarButton) 隨時可用 */
+        /* 隱藏頂部 header 與所有無用的右上角選單、裝飾線與浮水印 */
     header[data-testid="stHeader"],
-    header {
-        background: transparent !important;
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        height: 3.5rem !important;
-        pointer-events: none !important;
-        z-index: 99999 !important;
-    }
-
-    /* 隱藏無用的右上角選單、裝飾線與浮水印 */
+    header,
     #MainMenu,
     [data-testid="stToolbar"],
     #stDecoration,
     [data-testid="stDecoration"],
     [data-testid="stStatusWidget"],
     .viewerBadge_container__r5tak,
-    .viewerBadge_link__1SuqQ {
+    .viewerBadge_link__1SuqQ,
+    footer,
+    div[class*="viewerBadge"],
+    div[class*="StatusWidget"],
+    div[class*="FloatingContainer"],
+    footer[class*="footer"],
+    [data-testid="stFooter"] {
         display: none !important;
         visibility: hidden !important;
         height: 0 !important;
         width: 0 !important;
         margin: 0 !important;
         padding: 0 !important;
-    }
-
-    /* 確保側邊欄展開按鈕 (stExpandSidebarButton) 在側邊欄關閉後清晰可見且 100% 可點擊 */
-    header[data-testid="stHeader"] [data-testid="stExpandSidebarButton"],
-    [data-testid="stExpandSidebarButton"],
-    [data-testid="stSidebarCollapsedControl"],
-    [data-testid="collapsedControl"] {
-        display: flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        pointer-events: auto !important;
-        z-index: 100000 !important;
-    }
-
-    /* 側邊欄展開按鈕簡約清爽淺色風格造型 */
-    [data-testid="stExpandSidebarButton"] button,
-    header[data-testid="stHeader"] [data-testid="stExpandSidebarButton"] button {
-        pointer-events: auto !important;
-        background: #ffffff !important;
-        border: 1.5px solid #0284c7 !important;
-        border-radius: 8px !important;
-        color: #0284c7 !important;
-        width: 36px !important;
-        height: 36px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1) !important;
-        cursor: pointer !important;
-        transition: all 0.2s ease !important;
-    }
-    [data-testid="stExpandSidebarButton"] button:hover {
-        background: #e0f2fe !important;
-        border-color: #0284c7 !important;
-        transform: scale(1.06);
-    }
-
-    /* 確保側邊欄收折按鈕正常運作 */
-    [data-testid="stSidebarCollapseButton"] {
-        display: flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        pointer-events: auto !important;
-    }
-
-    footer {visibility: hidden !important; display: none !important; height: 0 !important; max-height: 0 !important; margin: 0 !important; padding: 0 !important;}
-    /* 徹底銷除 Streamlit 底部白色浮水印橫條 (Built with Streamlit / Fullscreen) */
-    div[class*="viewerBadge"],
-    div[class*="StatusWidget"],
-    div[class*="FloatingContainer"],
-    footer[class*="footer"],
-    div[data-testid="stDecoration"],
-    [data-testid="stFooter"] {
-        display: none !important;
-        visibility: hidden !important;
-        height: 0 !important;
         opacity: 0 !important;
         pointer-events: none !important;
     }
 
-    /* === 消除外層白邊（只針對 html/body，不影響 sidebar/content 佈局） === */
+    /* 完全刪除與徹底隱藏側邊欄及任何側邊欄展開/收折按鈕 (所有裝置螢幕尺寸通用) */
+    section[data-testid="stSidebar"],
+    [data-testid="stSidebar"],
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"],
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="stExpandSidebarButton"],
+    .st-key-mobile_header_bar,
+    [data-testid="stElementContainer"]:has(.st-key-mobile_header_bar),
+    div[data-testid="stBottom"],
+    .mobile-bottom-nav {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        min-width: 0 !important;
+        max-width: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+        pointer-events: none !important;
+    }
+
+    /* 消除外層白邊與滾動設定 */
     html, body {
         margin: 0 !important;
         padding: 0 !important;
         overflow-x: hidden !important;
         border: none !important;
     }
-    /* ==========================================
-       響應式雙模排版：手機端靠左正方形三條槓導航 vs 電腦端側邊欄 (淺色模式)
-       ========================================== */
-    /* 手機版 (螢幕寬度 <= 768px) */
-    @media (max-width: 768px) {
-        section[data-testid="stSidebar"],
-        [data-testid="stSidebar"],
-        [data-testid="collapsedControl"],
-        [data-testid="stSidebarCollapseButton"] {
-            display: none !important;
-            visibility: hidden !important;
-            width: 0 !important;
-            min-width: 0 !important;
-            max-width: 0 !important;
-            position: absolute !important;
-            left: -9999px !important;
-        }
-        
-        div[data-testid="stBottom"],
-        .mobile-bottom-nav {
-            display: none !important;
-            visibility: hidden !important;
-            height: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
 
-        html, body, .stApp, [data-testid="stAppViewContainer"], section.main {
-            overflow-y: auto !important;
-            -webkit-overflow-scrolling: touch !important;
-        }
+    /* 確保手機與電腦畫面自然流暢垂直滑動 */
+    html, body, .stApp, [data-testid="stAppViewContainer"], section.main {
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        transform: none !important;
+    }
 
     /* ==========================================
-       畫面上方常駐頂部導航列 + 左上角齒輪按鈕方塊 (淺色模式)
+       畫面上方常駐置頂固定黏濁導航列 (淺色模式)
+       無論怎麼上下滑動，皆牢牢固定在畫面頂端同一位置跟著螢幕移動
        ========================================== */
     .st-key-top_navigation_bar {
-        position: sticky !important;
-        top: 0.5rem !important;
-        z-index: 9999 !important;
-        background: rgba(255, 255, 255, 0.94) !important;
-        backdrop-filter: blur(16px) !important;
-        -webkit-backdrop-filter: blur(16px) !important;
-        border: 1.5px solid rgba(2, 132, 199, 0.25) !important;
-        border-radius: 14px !important;
-        padding: 8px 12px !important;
-        margin-bottom: 16px !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
-    }
-
-    .st-key-top_gear_popover,
-    .st-key-top_gear_popover [data-testid="stPopover"] {
-        width: 44px !important;
-        height: 44px !important;
-        min-width: 44px !important;
-        min-height: 44px !important;
-        max-width: 44px !important;
-        max-height: 44px !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        z-index: 999999 !important;
+        background: rgba(255, 255, 255, 0.96) !important;
+        backdrop-filter: blur(24px) !important;
+        -webkit-backdrop-filter: blur(24px) !important;
+        border-bottom: 1.5px solid rgba(2, 132, 199, 0.35) !important;
+        border-top: none !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-radius: 0 0 16px 16px !important;
+        padding: 8px 16px !important;
         margin: 0 !important;
-        padding: 0 !important;
-        display: block !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+        box-sizing: border-box !important;
     }
 
-    .st-key-top_gear_popover [data-testid="stPopover"] > button,
-    .st-key-top_gear_popover [data-testid="stPopoverButton"] {
+    /* 左上角齒輪按鈕方塊 (44px × 44px 正方形獨立按鈕，點擊進入獨立設定畫面區) */
+    .st-key-top_navigation_bar [data-testid="stColumn"]:first-child button {
         width: 44px !important;
-        height: 44px !important;
         min-width: 44px !important;
-        min-height: 44px !important;
         max-width: 44px !important;
+        height: 44px !important;
+        min-height: 44px !important;
         max-height: 44px !important;
         aspect-ratio: 1 / 1 !important;
-        background: #ffffff !important;
-        border: 1.5px solid #0284c7 !important;
         border-radius: 10px !important;
-        color: #0284c7 !important;
+        font-size: 20px !important;
+        line-height: 1 !important;
+        padding: 0 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1) !important;
-        padding: 0 !important;
         cursor: pointer !important;
         transition: all 0.2s ease !important;
     }
-    .st-key-top_gear_popover [data-testid="stPopover"] > button:hover,
-    .st-key-top_gear_popover [data-testid="stPopoverButton"]:hover {
-        background: #e0f2fe !important;
-        border-color: #0284c7 !important;
-        transform: scale(1.05);
-    }
 
-    .st-key-top_gear_popover [data-testid="stPopoverButton"] svg,
-    .st-key-top_gear_popover [data-testid="stPopoverButton"] [data-testid="stIconMaterial"],
-    .st-key-top_gear_popover [data-testid="stPopoverButton"] .material-symbols-rounded,
-    .st-key-top_gear_popover [data-testid="stPopoverButton"] > div > *:nth-child(2),
-    .st-key-top_gear_popover [data-testid="stPopover"] button svg,
-    .st-key-top_gear_popover [data-testid="stPopover"] button [data-testid="stIconMaterial"],
-    .st-key-top_gear_popover [data-testid="stPopover"] button .material-symbols-rounded,
-    .st-key-top_gear_popover [data-testid="stPopover"] button > div > *:nth-child(2) {
-        display: none !important;
-        visibility: hidden !important;
-        width: 0 !important;
-        height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    .st-key-top_gear_popover [data-testid="stPopoverButton"] > div,
-    .st-key-top_gear_popover [data-testid="stPopover"] button > div {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        width: 100% !important;
-        height: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    .st-key-top_gear_popover [data-testid="stPopoverButton"] p,
-    .st-key-top_gear_popover [data-testid="stPopover"] button p {
-        margin: 0 !important;
-        padding: 0 !important;
-        font-size: 22px !important;
-        line-height: 1 !important;
-        font-weight: 900 !important;
-    }
-
-    .st-key-top_navigation_bar button[kind="secondary"],
-    .st-key-top_navigation_bar button[kind="primary"] {
+    /* 頂部一排功能選單按鈕風格 (淺色模式) */
+    .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button {
         border-radius: 9px !important;
         font-size: 14px !important;
         font-weight: 600 !important;
@@ -1346,22 +1103,14 @@ LIGHT_CSS = """
         transition: all 0.2s ease !important;
     }
 
-    div[data-testid="stPopoverBody"] {
-        z-index: 1000000 !important;
-        min-width: 280px !important;
-        max-width: 90vw !important;
-        max-height: 85vh !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch !important;
-        background: rgba(255, 255, 255, 0.98) !important;
-        backdrop-filter: blur(24px) !important;
-        -webkit-backdrop-filter: blur(24px) !important;
-        border: 1.5px solid #0284c7 !important;
-        border-radius: 14px !important;
-        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.15) !important;
-        padding: 14px !important;
+    /* 確保固定頂部導航列不遮擋下方主內容區塊 */
+    .main .block-container {
+        padding-top: 86px !important;
+        padding-bottom: 2rem !important;
+        max-width: 100% !important;
     }
 
+    /* 手機版橫向自適應滑動 (Chips / Tabs) (<= 768px) */
     @media (max-width: 768px) {
         .st-key-top_navigation_bar [data-testid="stHorizontalBlock"] {
             display: flex !important;
@@ -1378,33 +1127,23 @@ LIGHT_CSS = """
             min-width: fit-content !important;
             width: auto !important;
         }
-        .st-key-top_navigation_bar button {
+        .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button {
             white-space: nowrap !important;
             font-size: 13px !important;
             padding: 4px 10px !important;
         }
-    }
+        .main .block-container {
+            padding-top: 82px !important;
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+            padding-bottom: 2rem !important;
+        }
     }
 
     /* 電腦版 (螢幕寬度 >= 769px) */
     @media (min-width: 769px) {
-        .st-key-mobile_header_bar,
-        [data-testid="stElementContainer"]:has(.st-key-mobile_header_bar),
-        div[data-testid="stBottom"],
-        .mobile-bottom-nav {
-            display: none !important;
-            visibility: hidden !important;
-            height: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            pointer-events: none !important;
-        }
-        section[data-testid="stSidebar"] {
-            display: block !important;
-            visibility: visible !important;
-        }
         .main .block-container {
-            padding-top: 1.5rem !important;
+            padding-top: 86px !important;
             padding-bottom: 2rem !important;
         }
     }
@@ -3063,35 +2802,8 @@ if "current_user" not in st.session_state:
 
 current_user = st.session_state.get("current_user")
 
-# 未登入時側邊欄提供深色/淺色主題風格即時切換；登入後整合至左上角齒輪按鈕
+# 未登入狀態：主畫面直接提供風格與登入門戶 (已完全移除側邊欄)
 if current_user is None:
-    st.sidebar.radio(
-        "深色/淺色",
-        ["🌙 深色", "☀️ 淺色"],
-        key="app_theme_choice",
-        horizontal=True
-    )
-    st.sidebar.markdown("---")
-
-if current_user is None:
-    # 未登入狀態：側邊欄提示
-    st.sidebar.markdown("""
-    <div class="sidebar-header-box">
-        <div class="sidebar-title">🛡️ Peripheral Copilot</div>
-        <div class="sidebar-subtitle">● 會員權限驗證中心 (Auth Gateway)</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.sidebar.info("""
-    **👋 歡迎蒞臨電腦周邊售後與風控平台！**
-    
-    本系統已全面升級為**「會員帳號登入制」**：
-    - 👤 **一般使用者 (買家)**：提交保固維修與退貨申請、上傳照片 AI 檢測、隨時追蹤個人案件進度。
-    - 🛡️ **管理方 (店長/審核)**：具備人機協同審查 (HITL)、Google Gemini 3.8 Flash 風控研判、BI 營運儀表板與帳號權限管理。
-
-    👉 請由主畫面【登入】或【註冊】新帳號以進入系統。
-    """)
-    st.sidebar.caption("📧 系統客服信箱：zhuant610@gmail.com")
 
     # 主畫面呈現：精緻的登入與註冊整合門戶
     st.markdown("""
@@ -3110,6 +2822,22 @@ if current_user is None:
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+    col_auth_info, col_theme_toggle = st.columns([4, 1.4])
+    with col_auth_info:
+        st.caption("📧 系統客服信箱：zhuant610@gmail.com ｜ 鍵盤、滑鼠、耳機人機協同風控平台")
+    with col_theme_toggle:
+        auth_theme_choice = st.radio(
+            "色彩模式",
+            ["🌙 深色", "☀️ 淺色"],
+            index=0 if is_dark else 1,
+            horizontal=True,
+            key="auth_screen_theme_radio",
+            label_visibility="collapsed"
+        )
+        if auth_theme_choice != st.session_state.get("app_theme_choice"):
+            st.session_state["app_theme_choice"] = auth_theme_choice
+            st.rerun()
 
     auth_tab_login, auth_tab_register = st.tabs(["🔑 會員登入 (Sign In)", "📝 註冊新帳號 (Sign Up)"])
 
@@ -3185,13 +2913,13 @@ if current_user is None:
 is_admin = (current_user["role"] == "admin")
 st.session_state["admin_authenticated"] = is_admin
 
-# 畫面上方功能按鈕配置 (依身分角色分流；「系統設定」依需求獨立收納至左上角齒輪按鈕)
+# 畫面上方功能按鈕配置 (側邊欄已完全刪除；依身分角色分流按鈕)
 if not is_admin:
     top_nav_items = [
         {"id": "📝 買家：提交退換貨申請", "label": "退換申請", "icon": "📝"},
         {"id": "🔍 買家：查詢進度 / 補充照片", "label": "進度查詢", "icon": "🔍"}
     ]
-    valid_nav_ids = [item["id"] for item in top_nav_items]
+    valid_nav_ids = [item["id"] for item in top_nav_items] + ["⚙️ 系統設定 & 外觀風格"]
 else:
     top_nav_items = [
         {"id": "🧑‍💼 店長：人機對照審核台", "label": "店長審核台", "icon": "🧑‍💼"},
@@ -3200,62 +2928,16 @@ else:
         {"id": "📝 買家：提交退換貨申請", "label": "買家申請", "icon": "📝"},
         {"id": "🔍 買家：查詢進度 / 補充照片", "label": "進度查詢", "icon": "🔍"}
     ]
-    # 所有合法導航目標 (包含從左上角齒輪按鈕進入的系統設定 & API)
-    valid_nav_ids = [item["id"] for item in top_nav_items] + ["⚙️ 系統設定 & API"]
+    # 所有合法導航目標 (包含點擊左上角齒輪按鈕進入的獨立設定畫面區)
+    valid_nav_ids = [item["id"] for item in top_nav_items] + ["⚙️ 系統設定 & 外觀風格", "⚙️ 系統設定 & API"]
 
 # 初始化當前選取頁面狀態
 if "active_nav_menu" not in st.session_state or st.session_state["active_nav_menu"] not in valid_nav_ids:
     st.session_state["active_nav_menu"] = valid_nav_ids[0]
 
-# 關鍵修復：在側邊欄 radio 生成前預先同步 session_state，確保完全避免 StreamlitWidgetAlreadyInstantiatedError
-st.session_state["desktop_sidebar_radio"] = st.session_state["active_nav_menu"]
-
-# --- 側邊欄（電腦端寬螢幕顯示，提供快速導航與系統資訊） ---
-with st.sidebar:
-    if not is_admin:
-        st.markdown(f"""
-        <div class="sidebar-header-box">
-            <div class="sidebar-title">🛍️ 周邊售後客服中心</div>
-            <div class="sidebar-subtitle">👤 一般使用者：{current_user['username']}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown(f"""
-        <div class="sidebar-header-box">
-            <div class="sidebar-title">🛡️ Peripheral Copilot</div>
-            <div class="sidebar-subtitle-admin">🟢 管理員已登入：{current_user['username']}</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # 側邊欄選單切換回調：同步更新 active_nav_menu
-    def _on_sidebar_change():
-        st.session_state["active_nav_menu"] = st.session_state["desktop_sidebar_radio"]
-
-    st.radio(
-        "📌 快捷功能導航",
-        valid_nav_ids,
-        key="desktop_sidebar_radio",
-        on_change=_on_sidebar_change
-    )
-
-    st.markdown("---")
-    st.info("""
-    **🎯 檢測對象聚焦：**
-    - ⌨️ **機械/薄膜鍵盤** (軸體/鍵位/PCB)
-    - 🖱️ **滑鼠** (微動/編碼器/感應器)
-    - 🎧 **耳機** (單元/頭樑/收音)
-    """)
-
-    st.markdown("---")
-    if st.button(f"🚪 登出系統 ({current_user['username']})", use_container_width=True, key="sidebar_logout_btn"):
-        st.session_state["current_user"] = None
-        st.session_state["admin_authenticated"] = False
-        st.rerun()
-    st.caption(f"👤 當前帳號：{current_user['username']} ({'管理方' if is_admin else '買家'})")
-
 # ==========================================
-# 畫面上方常駐頂部導航列：
-# 1. 畫面左上角：齒輪圖案按鈕方塊 (整合系統設定與背景顏色切換)
+# 畫面上方固定黏濁置頂導航列 (無論上下滑動均固定在畫面最上方)：
+# 1. 畫面左上角：齒輪圖案獨立按鈕 (點擊直接進入全新獨立設定畫面區)
 # 2. 畫面上方：一排功能選單按鈕 (點擊即時切換頁面並高亮顯示)
 # ==========================================
 with st.container(key="top_navigation_bar"):
@@ -3264,50 +2946,12 @@ with st.container(key="top_navigation_bar"):
     else:
         top_cols = st.columns([0.65, 4.5, 4.5])
 
-    # 1. 畫面左上角：齒輪圖案按鈕方塊
+    # 1. 畫面左上角：齒輪圖案獨立按鈕 (點擊後直接進入獨立設定畫面區，非下拉選單)
     with top_cols[0]:
-        with st.container(key="top_gear_popover"):
-            with st.popover("⚙️", help="外觀風格與系統偏好設定"):
-                st.markdown(f'''
-                <div style="font-size:14px; font-weight:700; color:{'#38bdf8' if is_admin else '#10b981'}; margin-bottom:4px;">
-                    ⚙️ 偏好設定與系統控制
-                </div>
-                <div style="font-size:12px; color:#94a3b8; margin-bottom:10px;">
-                    登入帳號：<b>{current_user['username']}</b> ({'平台管理員' if is_admin else '一般買家'})
-                </div>
-                ''', unsafe_allow_html=True)
-                st.markdown("---")
-
-                # 背景顏色設定 (深色 / 淺色 即時切換)
-                st.markdown("**🎨 背景顏色設定**")
-                curr_theme_idx = 0 if is_dark else 1
-                theme_pick = st.radio(
-                    "色彩風格",
-                    ["🌙 深色", "☀️ 淺色"],
-                    index=curr_theme_idx,
-                    horizontal=True,
-                    key="gear_theme_radio",
-                    label_visibility="collapsed"
-                )
-                if theme_pick != st.session_state.get("app_theme_choice"):
-                    st.session_state["app_theme_choice"] = theme_pick
-                    st.rerun()
-
-                # 系統設定 (管理員專屬)
-                if is_admin:
-                    st.markdown("---")
-                    st.markdown("**🛠️ 核心系統設定**")
-                    is_settings_active = (st.session_state["active_nav_menu"] == "⚙️ 系統設定 & API")
-                    if st.button("⚙️ 系統設定 & API (Gemini / SMTP)", key="gear_btn_settings", type="primary" if is_settings_active else "secondary", use_container_width=True):
-                        st.session_state["active_nav_menu"] = "⚙️ 系統設定 & API"
-                        st.rerun()
-
-                # 登出系統
-                st.markdown("---")
-                if st.button(f"🚪 登出系統 ({current_user['username']})", key="gear_btn_logout", type="secondary", use_container_width=True):
-                    st.session_state["current_user"] = None
-                    st.session_state["admin_authenticated"] = False
-                    st.rerun()
+        is_gear_active = (st.session_state["active_nav_menu"] in ["⚙️ 系統設定 & 外觀風格", "⚙️ 系統設定 & API"])
+        if st.button("⚙️", key="btn_top_gear_nav", type="primary" if is_gear_active else "secondary", help="進入系統設定與外觀風格", use_container_width=True):
+            st.session_state["active_nav_menu"] = "⚙️ 系統設定 & 外觀風格"
+            st.rerun()
 
     # 2. 畫面上方：一排功能選單按鈕
     for idx, item in enumerate(top_nav_items):
@@ -4162,22 +3806,64 @@ elif menu == "👥 帳號清單與權限管理":
         else:
             st.caption("※ 目前除了根管理員 (admin) 外尚無其他帳號可刪除。")
 
-elif menu == "⚙️ 系統設定 & API":
+elif menu in ["⚙️ 系統設定 & 外觀風格", "⚙️ 系統設定 & API"]:
     st.markdown("""
     <div class="tech-hero">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
             <div>
-                <div class="hero-title">⚙️ 系統設定與真實 AI 模型串接</div>
+                <div class="hero-title">⚙️ 系統設定與個人偏好中心</div>
                 <div class="hero-subtitle">
-                    支援內建模擬規則引擎與 Google Gemini 多模態視覺模型雙軌切換
+                    管理外觀色彩主題、帳號偏好設定與核心 AI / 郵件服務串接
                 </div>
             </div>
             <div>
-                <span class="badge-item">🔌 API 管理</span>
+                <span class="badge-item">⚙️ 設定中心</span>
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+    # 區塊 1: 🎨 介面風格與背景色彩設定 (深色/淺色 即時切換)
+    st.markdown("### 🎨 介面風格與背景色彩設定")
+    st.caption("即時切換科技深色或簡約淺色模式，系統將自動套用高對比色彩風格：")
+    curr_theme_idx = 0 if is_dark else 1
+    c_theme1, c_theme2 = st.columns([2, 3])
+    with c_theme1:
+        theme_pick = st.radio(
+            "系統外觀色彩",
+            ["🌙 深色", "☀️ 淺色"],
+            index=curr_theme_idx,
+            horizontal=True,
+            key="page_settings_theme_radio"
+        )
+        if theme_pick != st.session_state.get("app_theme_choice"):
+            st.session_state["app_theme_choice"] = theme_pick
+            st.rerun()
+    with c_theme2:
+        st.info(f"💡 目前套用主題：**{st.session_state.get('app_theme_choice', '🌙 深色')}**。切換後立即可見效果。")
+
+    st.markdown("---")
+
+    # 區塊 2: 👤 當前登入者帳號資料與登出
+    st.markdown("### 👤 當前登入者帳號資料")
+    c_u1, c_u2, c_u3 = st.columns([2, 2, 1.5])
+    with c_u1:
+        st.markdown(f"**使用者名稱**：`{current_user['username']}`")
+        st.markdown(f"**角色身分**：`{'👑 平台管理員 (店長/審核)' if is_admin else '👤 一般使用者 (買家)'}`")
+    with c_u2:
+        st.markdown(f"**綁定電子信箱**：`{current_user.get('email', '未填寫')}`")
+        st.markdown(f"**註冊時間**：`{current_user.get('created_at', '系統預設')}`")
+    with c_u3:
+        st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
+        if st.button("🚪 登出系統", key="settings_page_logout_btn", type="secondary", use_container_width=True):
+            st.session_state["current_user"] = None
+            st.session_state["admin_authenticated"] = False
+            st.rerun()
+
+    # 區塊 3: 管理方核心 AI 與 API 串接設定 (或買家專屬提示)
+    if is_admin:
+        st.markdown("---")
+        st.markdown("### 🛠️ 核心 AI 模型與 API 串接設定")
 
     st.markdown("系統預設已搭載**電腦周邊智慧展示模擬引擎**（零門檻保證可跑）。若想接入真實 Google Gemini 視覺多模態模型，請在此輸入 API 金鑰。")
 
@@ -4259,3 +3945,11 @@ elif menu == "⚙️ 系統設定 & API":
         init_db()
         st.success("資料庫已成功重設，並載入精選電腦周邊示範案例！")
         st.rerun()
+    else:
+        st.markdown("---")
+        st.info("""
+        **🛍️ 買家售後服務須知：**
+        - 如需申請鍵盤、滑鼠或耳機退換貨/維修，請點擊上方【📝 退換申請】按鈕。
+        - 如需查詢案件最新審核進度或補充上傳外觀/瑕疵照片，請點擊上方【🔍 進度查詢】按鈕。
+        - 系統客服信箱：`zhuant610@gmail.com`
+        """)
