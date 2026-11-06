@@ -189,7 +189,7 @@ DARK_CSS = """
     /* 確保固定頂部導航列不遮擋下方主內容區塊 */
     .main .block-container {
         padding-top: 86px !important;
-        padding-bottom: 2rem !important;
+        padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 24px)) !important;
         max-width: 100% !important;
     }
 
@@ -219,7 +219,7 @@ DARK_CSS = """
             padding-top: 82px !important;
             padding-left: 0.75rem !important;
             padding-right: 0.75rem !important;
-            padding-bottom: 2rem !important;
+            padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 24px)) !important;
         }
     }
 
@@ -227,7 +227,7 @@ DARK_CSS = """
     @media (min-width: 769px) {
         .main .block-container {
             padding-top: 86px !important;
-            padding-bottom: 2rem !important;
+            padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 24px)) !important;
         }
     }
     /* 全域科技感微光漸層背景與微網格 */
@@ -1148,7 +1148,7 @@ LIGHT_CSS = """
     /* 確保固定頂部導航列不遮擋下方主內容區塊 */
     .main .block-container {
         padding-top: 86px !important;
-        padding-bottom: 2rem !important;
+        padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 24px)) !important;
         max-width: 100% !important;
     }
 
@@ -1178,7 +1178,7 @@ LIGHT_CSS = """
             padding-top: 82px !important;
             padding-left: 0.75rem !important;
             padding-right: 0.75rem !important;
-            padding-bottom: 2rem !important;
+            padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 24px)) !important;
         }
     }
 
@@ -1186,7 +1186,7 @@ LIGHT_CSS = """
     @media (min-width: 769px) {
         .main .block-container {
             padding-top: 86px !important;
-            padding-bottom: 2rem !important;
+            padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 24px)) !important;
         }
     }
     /* 全域清爽亮麗漸層背景與微網格 */
