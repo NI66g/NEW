@@ -3862,7 +3862,7 @@ elif menu in ["⚙️ 系統設定 & 外觀風格", "⚙️ 系統設定 & API"]
             <div>
                 <div class="hero-title">⚙️ 系統設定與個人偏好中心</div>
                 <div class="hero-subtitle">
-                    管理外觀色彩主題、帳號偏好設定與核心 AI / 郵件服務串接
+                    管理外觀色彩主題、個人帳號資料與平台服務資訊
                 </div>
             </div>
             <div>
@@ -3903,96 +3903,12 @@ elif menu in ["⚙️ 系統設定 & 外觀風格", "⚙️ 系統設定 & API"]
         st.markdown(f"**綁定電子信箱**：`{current_user.get('email', '未填寫')}`")
         st.markdown(f"**註冊時間**：`{current_user.get('created_at', '系統預設')}`")
 
-    # 區塊 3: 管理方核心 AI 與 API 串接設定 (或買家專屬提示)
-    if is_admin:
-        st.markdown("---")
-        st.markdown("### 🛠️ 核心 AI 模型與 API 串接設定")
-
-    st.markdown("系統預設已搭載**電腦周邊智慧展示模擬引擎**（零門檻保證可跑）。若想接入真實 Google Gemini 視覺多模態模型，請在此輸入 API 金鑰。")
-
-    admin_cfg = load_admin_config()
-    current_key = st.session_state.get("gemini_api_key", "") or admin_cfg.get("gemini_api_key", "")
-    new_key = st.text_input("Google Gemini API Key (選填)", value=current_key, type="password", help="支援 Google AI Studio 免費層金鑰 (例如圖中 ewtw 結尾之 API Key)")
-    st.caption("⚡ **模型規格**：系統已全面鎖定並一致通用 Google 官方指定旗艦模型 **`gemini-3.8-flash`**（具備頂級多模態視覺與超低延遲分析能力）。")
-
-    if st.button("💾 儲存 API Key", type="primary"):
-        st.session_state["gemini_api_key"] = new_key
-        st.session_state["gemini_model_name"] = "gemini-3.8-flash"
-        save_admin_config(gemini_api_key=new_key, gemini_model_name="gemini-3.8-flash")
-        st.success("API Key 已成功儲存至設定檔！後續風控分析將全面一致調用官方指定旗艦模型【gemini-3.8-flash】。")
-
+    # 區塊 3: 🛍️ 會員售後服務須知與系統指引
     st.markdown("---")
-    st.subheader("📧 審核結果郵件發送設定 (Gmail SMTP)")
-    st.markdown(f"系統指定之發信寄件者信箱：`{SENDER_EMAIL}`")
-
-    cfg = load_email_config()
-    current_pwd = cfg.get("app_password", "")
-
-    with st.expander("ℹ️ 為什麼需要「16 碼應用程式密碼」？（點此查看 Google 帳戶設定教學）", expanded=not bool(current_pwd)):
-        st.markdown("""
-        **重要說明**：
-        Google 為維護帳戶安全性，自 2022 年起已全面停用「低安全性應用程式存取權限」，因此**無法直接使用您的 Google 登入密碼發送郵件**，必須在 Google 帳戶內產生專用的 **16 碼「應用程式密碼」**。
-
-        **⚙️ 取得步驟（僅需設定一次）：**
-        1. 登入寄件電子信箱 **`zhuant610@gmail.com`** 的 Google 帳戶。
-        2. 前往 [Google 帳戶安全性設定 (myaccount.google.com/security)](https://myaccount.google.com/security)。
-        3. 確認「**兩步驟驗證**」狀態為【**已開啟**】（未開啟兩步驟驗證將無法建立應用程式密碼）。
-        4. 在頂部搜尋欄輸入「**應用程式密碼**」(App Passwords) 或至安全性頁面點擊進入。
-        5. 應用程式名稱輸入「`電腦周邊退換貨小幫手`」，點擊「**建立**」。
-        6. 複製彈出視窗中的 **16 碼英文字母**（例如：`abcd efgh ijkl mnop`），貼入下方輸入框並點擊「**儲存郵件設定**」即可！
-        """)
-
-    new_pwd = st.text_input(
-        "Gmail 應用程式密碼 (App Password)", 
-        value=current_pwd, 
-        type="password",
-        placeholder="例如：abcd efgh ijkl mnop (共16碼英文字母)",
-        help="輸入 Google 帳戶安全性中產生的 16 碼專用密碼。儲存後會持久化記錄於本地 email_config.json，重新整理不遺失。"
-    )
-    if st.button("💾 儲存郵件設定", type="primary"):
-        save_email_config(SENDER_EMAIL, new_pwd.strip())
-        st.session_state["gmail_app_password"] = new_pwd.strip()
-        st.success(f"✅ 郵件設定已成功永久儲存至 `email_config.json`！裁決時將透過 `{SENDER_EMAIL}` 正式發送通知信。")
-
-    st.markdown("##### 📨 測試郵件寄送功能")
-    test_c1, test_c2 = st.columns([3, 1])
-    with test_c1:
-        test_email_target = st.text_input("收件測試電子信箱", value="", placeholder="輸入您想要接收測試信件的信箱 (例如: user@gmail.com)")
-    with test_c2:
-        st.markdown("<div style='margin-top:28px;'></div>", unsafe_allow_html=True)
-        if st.button("🚀 發送測試信件", use_container_width=True):
-            if test_email_target and "@" in test_email_target:
-                with st.spinner(f"正在連線至 smtp.gmail.com:465 透過 {SENDER_EMAIL} 寄送測試信至 {test_email_target}..."):
-                    ok, res_msg = send_decision_email(
-                        customer_email=test_email_target.strip(),
-                        order_id="ORD-TEST-8888",
-                        product_name="客製化機械鍵盤 (系統連線測試件)",
-                        status="已通過",
-                        review_comment="系統連線與郵件推播功能測試正常，收發無虞！",
-                        verdict="測試連線核發",
-                        recommendation="此為系統發送測試信，請確認收件夾或垃圾郵件匣"
-                    )
-                    if ok:
-                        st.success(f"{res_msg}")
-                    else:
-                        st.error(f"{res_msg}")
-            else:
-                st.warning("⚠️ 請先輸入正確格式的收件測試電子信箱！")
-
-    st.markdown("---")
-    st.subheader("🛠️ 資料庫重設與展示資料還原")
-    st.caption("點擊下方按鈕將清除目前資料庫，並重新載入精選的「鍵盤、滑鼠、耳機」展示案例。")
-    if st.button("重設回電腦周邊示範資料 (Reset DB)"):
-        if os.path.exists(DB_FILE):
-            os.remove(DB_FILE)
-        init_db()
-        st.success("資料庫已成功重設，並載入精選電腦周邊示範案例！")
-        st.rerun()
-    else:
-        st.markdown("---")
-        st.info("""
-        **🛍️ 買家售後服務須知：**
-        - 如需申請鍵盤、滑鼠或耳機退換貨/維修，請點擊上方【📝 退換申請】按鈕。
-        - 如需查詢案件最新審核進度或補充上傳外觀/瑕疵照片，請點擊上方【🔍 進度查詢】按鈕。
-        - 系統客服信箱：`zhuant610@gmail.com`
-        """)
+    st.info("""
+    **🛍️ 會員售後服務須知與系統指引：**
+    - 📝 **申請售後**：如需申請機械/薄膜鍵盤、電競滑鼠或耳機退換貨/維修，請點擊上方【📝 退換申請】（或【📝 買家申請】）。
+    - 🔍 **進度查詢**：如需查詢案件最新審核進度或補充上傳外觀/瑕疵照片，請點擊上方【🔍 進度查詢】。
+    - 🎨 **風格切換**：可隨時於上方切換「🌙 深色」或「☀️ 淺色」模式，系統將自動套用對應的介面配色。
+    - 📧 **系統客服信箱**：`zhuant610@gmail.com`
+    """)
