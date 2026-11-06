@@ -3264,6 +3264,113 @@ def render_register_verify_dialog_content():
             st.session_state["reg_verify_send_status"] = ""
             st.rerun()
 
+def test_backend_connection(target_url):
+    """測試指定後端伺服器網址之通訊健康度與延遲"""
+    target_url = (target_url or "").strip()
+    if not target_url:
+        return False, "❌ 請輸入後端伺服器網址！"
+    if not (target_url.startswith("http://") or target_url.startswith("https://")):
+        return False, "❌ 網址格式無效，請以 http:// 或 https:// 開頭。"
+
+    import time
+    import urllib.request
+    import urllib.error
+    start_time = time.time()
+    try:
+        req = urllib.request.Request(
+            target_url,
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) WarrantyCopilot/1.0"}
+        )
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            elapsed = int((time.time() - start_time) * 1000)
+            status_code = resp.getcode()
+            if status_code in [200, 301, 302, 304]:
+                return True, f"🟢 連線通訊正常！端點已成功響應 (HTTP {status_code}，延遲約 {elapsed} ms)。"
+            return True, f"🟡 伺服器有回應 (HTTP {status_code}，延遲約 {elapsed} ms)。"
+    except urllib.error.HTTPError as e:
+        elapsed = int((time.time() - start_time) * 1000)
+        return True, f"🟡 伺服器在線且可連通 (HTTP {e.code}，延遲約 {elapsed} ms)。"
+    except Exception as e:
+        return False, f"🔴 無法連線至該伺服器端點 ({str(e)})。請確認網址或伺服器是否在線啟動。"
+
+def render_backend_config_dialog_content():
+    """
+    系統後端伺服器與 Vercel 門戶連線設定小視窗：
+    - 支援修改與即時測試 Streamlit 核心後端連線網址
+    - 支援一鍵儲存並同步至 Vercel 門戶與 local admin_config.json
+    - 提供即時連線健康度檢測與延遲測量
+    """
+    admin_cfg = load_admin_config()
+    cur_backend = st.session_state.get("backend_url") or admin_cfg.get("backend_url", "https://c79p6iaujeyjubfmyygaqj.streamlit.app")
+
+    st.markdown("""
+    <div style="background: rgba(56, 189, 248, 0.08); border: 1.5px solid rgba(56, 189, 248, 0.35); border-radius: 10px; padding: 12px 16px; margin-bottom: 14px;">
+        <div style="font-size: 14px; font-weight: 700; color: #38bdf8; margin-bottom: 4px;">🌐 前後端微服務連線配置</div>
+        <div style="font-size: 13px; color: #cbd5e1; line-height: 1.5;">
+            本專案採用 <b>Vercel 邊緣前端 CDN + Python Streamlit AI 運算容器</b> 現代混合雲架構。您可在此檢視、測試並切換後端連線端點網址。
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    input_url = st.text_input(
+        "Streamlit 核心後端網址 (Backend URL)：",
+        value=cur_backend,
+        key="dlg_input_backend_url",
+        placeholder="例如: https://c79p6iaujeyjubfmyygaqj.streamlit.app",
+        help="輸入負責執行 AI 風控與資料庫之 Streamlit 伺服器完整網址"
+    )
+
+    clean_url = input_url.strip().rstrip('/')
+
+    test_res_key = "dlg_test_conn_result"
+    if test_res_key in st.session_state and st.session_state[test_res_key]:
+        ok, msg = st.session_state[test_res_key]
+        if ok:
+            st.success(msg)
+        else:
+            st.error(msg)
+
+    st.markdown("<div style='margin-top: 14px;'></div>", unsafe_allow_html=True)
+    col_test, col_save, col_close = st.columns([1.3, 1.4, 0.9])
+
+    with col_test:
+        if st.button("⚡ 測試連線", use_container_width=True, key="dlg_btn_test_conn"):
+            if not clean_url:
+                st.error("請輸入後端網址！")
+            else:
+                with st.spinner("正在連線至後端端點檢測通訊..."):
+                    ok, msg = test_backend_connection(clean_url)
+                    st.session_state[test_res_key] = (ok, msg)
+                    st.rerun()
+
+    with col_save:
+        if st.button("💾 儲存並同步", type="primary", use_container_width=True, key="dlg_btn_save_conn"):
+            if clean_url:
+                save_admin_config(backend_url=clean_url)
+                st.session_state["backend_url"] = clean_url
+                st.components.v1.html(f"""
+                <script>
+                function notifyOuter(msg) {{
+                    try {{ if (window.top && window.top !== window) window.top.postMessage(msg, '*'); }} catch(e) {{}}
+                    try {{ if (window.parent && window.parent.parent && window.parent.parent !== window) window.parent.parent.postMessage(msg, '*'); }} catch(e) {{}}
+                    try {{ if (window.parent && window.parent !== window) window.parent.postMessage(msg, '*'); }} catch(e) {{}}
+                }}
+                notifyOuter({{type: 'set_backend', url: '{clean_url}'}});
+                </script>
+                """, height=0)
+                st.session_state[test_res_key] = None
+                st.session_state["show_backend_config_dialog"] = False
+                st.success(f"✅ 後端網址已儲存並同步！新端點：`{clean_url}`")
+                st.rerun()
+            else:
+                st.error("請輸入有效的後端網址！")
+
+    with col_close:
+        if st.button("❌ 關閉", use_container_width=True, key="dlg_btn_close_conn"):
+            st.session_state[test_res_key] = None
+            st.session_state["show_backend_config_dialog"] = False
+            st.rerun()
+
 if dialog_decorator:
     @dialog_decorator("✅ 核准退換：填寫處置理由與維修資訊")
     def open_approve_modal(case_id, order_id, product_name, customer_email, ai_verdict, ai_recommendation):
@@ -3284,12 +3391,19 @@ if dialog_decorator:
     @dialog_decorator("📧 請輸入註冊驗證碼")
     def open_register_verify_modal():
         render_register_verify_dialog_content()
+
+    @dialog_decorator("⚙️ 系統後端伺服器與 Vercel 連線設定")
+    def open_backend_config_modal():
+        render_backend_config_dialog_content()
 else:
     def open_return_verify_modal():
         render_return_verify_dialog_content()
 
     def open_register_verify_modal():
         render_register_verify_dialog_content()
+
+    def open_backend_config_modal():
+        render_backend_config_dialog_content()
 
 
 # ==========================================
@@ -4509,9 +4623,12 @@ elif menu in ["⚙️ 系統設定 & 外觀風格", "⚙️ 系統設定 & API"]
                 st.session_state["backend_url"] = clean_url
                 st.components.v1.html(f"""
                 <script>
-                if (window.parent) {{
-                    window.parent.postMessage({{type: 'set_backend', url: '{clean_url}'}}, '*');
+                function notifyOuter(msg) {{
+                    try {{ if (window.top && window.top !== window) window.top.postMessage(msg, '*'); }} catch(e) {{}}
+                    try {{ if (window.parent && window.parent.parent && window.parent.parent !== window) window.parent.parent.postMessage(msg, '*'); }} catch(e) {{}}
+                    try {{ if (window.parent && window.parent !== window) window.parent.postMessage(msg, '*'); }} catch(e) {{}}
                 }}
+                notifyOuter({{type: 'set_backend', url: '{clean_url}'}});
                 </script>
                 """, height=0)
                 st.success(f"✅ 後端網址已儲存並同步！新連線端點：`{clean_url}`")
@@ -4521,15 +4638,27 @@ elif menu in ["⚙️ 系統設定 & 外觀風格", "⚙️ 系統設定 & API"]
     c_pop1, c_pop2 = st.columns([2, 3])
     with c_pop1:
         if st.button("⚙️ 開啟 Vercel 連線設定視窗", use_container_width=True, key="btn_open_portal_config"):
+            st.session_state["show_backend_config_dialog"] = True
             st.components.v1.html("""
             <script>
-            if (window.parent) {
-                window.parent.postMessage({type: 'open_backend_config'}, '*');
+            function notifyOuter(msg) {
+                try { if (window.top && window.top !== window) window.top.postMessage(msg, '*'); } catch(e) {}
+                try { if (window.parent && window.parent.parent && window.parent.parent !== window) window.parent.parent.postMessage(msg, '*'); } catch(e) {}
+                try { if (window.parent && window.parent !== window) window.parent.postMessage(msg, '*'); } catch(e) {}
             }
+            notifyOuter({type: 'open_backend_config'});
             </script>
             """, height=0)
+            st.rerun()
     with c_pop2:
-        st.caption("💡 點擊可於外層 Vercel 門戶直接呼叫獨立設定視窗，支援即時測試與網址切換。")
+        st.caption("💡 點擊可呼叫獨立連線設定視窗，支援伺服器即時測試、延遲檢測與 Vercel 門戶網址切換同步。")
+
+    # 檢查是否需要彈出後端連線設定小視窗
+    if st.session_state.get("show_backend_config_dialog"):
+        if dialog_decorator:
+            open_backend_config_modal()
+        else:
+            render_backend_config_dialog_content()
 
     st.markdown("---")
 
