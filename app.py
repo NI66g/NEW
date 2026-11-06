@@ -29,7 +29,7 @@ except ImportError:
 # 0. 網頁基本配置與電競科技風視覺樣式 (CSS)
 # ==========================================
 st.set_page_config(
-    page_title="電腦周邊售後風控平台 · 買家門戶與後台系統",
+    page_title="電腦周邊售後風控平台 · 售後門戶與管理後台",
     page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -2115,7 +2115,7 @@ def register_user(username, password, email, role="user", admin_code=""):
     )
     conn.commit()
     conn.close()
-    role_label = "🛡️ 平台管理員 (店長)" if role == "admin" else "👤 一般使用者 (買家)"
+    role_label = "🛡️ 平台管理員" if role == "admin" else "👤 一般使用者"
     return True, f"🎉 註冊成功！您已獲得【{role_label}】身份，請使用新帳號登入系統。"
 
 def authenticate_user(username, password):
@@ -2382,7 +2382,7 @@ def send_decision_email(customer_email, order_id, product_name, status, review_c
         </tr>
         """
 
-    comment_title = "店家核准說明與寄回指引" if status == "已通過" else ("店家駁回理由說明" if status == "已駁回" else "店長補件指示說明")
+    comment_title = "核准說明與寄回指引" if status == "已通過" else ("駁回理由說明" if status == "已駁回" else "審核補件指示說明")
 
     html_body = f"""
     <html>
@@ -2394,9 +2394,9 @@ def send_decision_email(customer_email, order_id, product_name, status, review_c
             </div>
             
             <div style="padding: 28px;">
-                <p style="font-size: 15px; color: #1e293b; margin-top: 0;">親愛的買家您好：</p>
+                <p style="font-size: 15px; color: #1e293b; margin-top: 0;">親愛的會員您好：</p>
                 <p style="font-size: 14px; color: #475569; line-height: 1.6;">
-                    您於本平台提交之電腦周邊售後申請，經由 <strong>AI 初審與店家專業複審</strong>，最終裁決結果如下：
+                    您於本平台提交之電腦周邊售後申請，經由 <strong>AI 初審與專業複審</strong>，最終裁決結果如下：
                 </p>
                 
                 <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 22px; margin: 20px 0;">
@@ -2456,7 +2456,7 @@ def send_decision_email(customer_email, order_id, product_name, status, review_c
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
             server.login(sender, clean_pwd)
             server.sendmail(sender, customer_email, msg.as_string())
-        return True, f"已成功由 {sender} 發送真實通知信至買家信箱：{customer_email}！"
+        return True, f"已成功由 {sender} 發送真實通知信至申請人信箱：{customer_email}！"
     except smtplib.SMTPAuthenticationError:
         return False, f"❌ Gmail 認證失敗 (535)：帳號 {sender} 或應用程式密碼錯誤。請確認 Google 帳戶已開啟「兩步驟驗證」，並至安全性設定中產生專用 16 碼「應用程式密碼」（注意：非一般登入密碼）。"
     except smtplib.SMTPConnectError as e:
@@ -2470,7 +2470,7 @@ def send_verification_code_email(customer_email, code):
     寄件者: zhuant610@gmail.com
     """
     if not customer_email or "@" not in customer_email:
-        return False, "⚠️ 買家未填寫有效之電子信箱格式。"
+        return False, "⚠️ 未填寫有效之電子信箱格式。"
 
     cfg = load_email_config()
     sender = cfg.get("sender_email", "zhuant610@gmail.com").strip()
@@ -2487,7 +2487,7 @@ def send_verification_code_email(customer_email, code):
             </div>
             
             <div style="padding: 24px 28px;">
-                <p style="font-size: 15px; color: #1e293b; margin-top: 0;">親愛的買家您好：</p>
+                <p style="font-size: 15px; color: #1e293b; margin-top: 0;">親愛的會員您好：</p>
                 <p style="font-size: 14px; color: #475569; line-height: 1.6;">
                     您正在本平台提交鍵盤、滑鼠或耳機的售後保固與退換貨申請。為確認您的聯絡信箱真實有效，並確保後續審核通知與保固處理結果能順利送達，請在網頁視窗中輸入以下 6 位數驗證碼：
                 </p>
@@ -2606,13 +2606,13 @@ def render_approve_dialog_content(case_id, order_id, product_name, customer_emai
     核准小視窗內容：填寫處置理由與維修資訊 (預計送回日期、維修人員工作編號)，確認後更新並發送 Email
     """
     st.markdown(f"**訂單編號**：`{order_id}` ｜ **商品名稱**：`{product_name}`")
-    st.markdown(f"**買家通知信箱**：`{customer_email}`")
+    st.markdown(f"**申請人通知信箱**：`{customer_email}`")
     st.markdown("---")
 
     st.markdown("##### 📦 請選擇售後處置方案：")
     action_type = st.radio(
         "處置模式",
-        ["📦 寄回原廠維修 / 更換零件 (啟用買家端維修進度追蹤)", "💰 全額退款 / 免寄回換發新品"],
+        ["📦 寄回原廠維修 / 更換零件 (啟用前台維修進度追蹤)", "💰 全額退款 / 免寄回換發新品"],
         index=0,
         key=f"dlg_act_{case_id}"
     )
@@ -2623,11 +2623,11 @@ def render_approve_dialog_content(case_id, order_id, product_name, customer_emai
     rep_status = ""
 
     if is_repair:
-        st.markdown("##### 🛠️ 維修排程與工程師指派 (皆可自訂，買家前台可即時查詢)：")
+        st.markdown("##### 🛠️ 維修排程與工程師指派 (皆可自訂，前台可即時查詢)：")
         rc1, rc2 = st.columns(2)
         with rc1:
             default_date = (datetime.now() + pd.Timedelta(days=7)).strftime("%Y-%m-%d")
-            rep_date = st.text_input("預計完修送回日期", value=default_date, key=f"dlg_date_{case_id}", help="例如：2026-10-27，讓買家掌握送回時程")
+            rep_date = st.text_input("預計完修送回日期", value=default_date, key=f"dlg_date_{case_id}", help="例如：2026-10-27，掌握送回時程")
         with rc2:
             default_tech = f"TECH-{(case_id * 137 % 900) + 100}"
             tech_id = st.text_input("維修人員工作編號", value=default_tech, key=f"dlg_tech_{case_id}", help="店家自訂之工程師/維修人員代碼")
@@ -2635,7 +2635,7 @@ def render_approve_dialog_content(case_id, order_id, product_name, customer_emai
         rep_status = st.selectbox(
             "初始維修進度狀態",
             [
-                "［待收件］已核准維修，請買家將瑕疵品包裝寄回",
+                "［待收件］已核准維修，請將瑕疵品包裝寄回",
                 "［檢測中］收到商品，工程師進行微動/軸體/電氣檢測",
                 "［更換零件中］已拆機更換原廠零組件",
                 "［校正完畢］清潔校正與全功能測試正常",
@@ -2647,11 +2647,11 @@ def render_approve_dialog_content(case_id, order_id, product_name, customer_emai
     else:
         rep_status = "直接退款 / 免寄回換新"
 
-    st.markdown("##### ✍️ 店家核准說明與指示 (此內容將完整呈現於寄送買家的 Email 通知中)：")
+    st.markdown("##### ✍️ 核准說明與指示 (此內容將完整呈現於寄送的 Email 通知中)：")
     default_approve_text = (
-        "經 AI 初審與店長複審，確認符合出廠保固免費維修標準！請依後續物流指引將故障品寄回。我們已指派專責維修工程師為您處理，您可隨時至「查詢進度」即時追蹤維修狀態與送回日期。"
+        "經 AI 初審與專責複審，確認符合出廠保固免費維修標準！請依後續物流指引將故障品寄回。我們已指派專責維修工程師為您處理，您可隨時至「查詢進度」即時追蹤維修狀態與送回日期。"
         if is_repair else
-        "經 AI 初審與店長複審，確認符合新品瑕疵標準，已為您核准申請！我們將主動安排款項退回或新機寄出，感謝您的配合。"
+        "經 AI 初審與專責複審，確認符合新品瑕疵標準，已為您核准申請！我們將主動安排款項退回或新機寄出，感謝您的配合。"
     )
     custom_desc = st.text_area(
         "核准詳細理由與注意事項：",
@@ -2660,7 +2660,7 @@ def render_approve_dialog_content(case_id, order_id, product_name, customer_emai
         key=f"dlg_app_desc_{case_id}"
     )
 
-    st.caption("※ 點擊下方確認按鈕後，案件將正式更新為「已通過」，並立即透過 **zhuant610@gmail.com** 發送包含上述理由與維修資訊的 Email 給買家。")
+    st.caption("※ 點擊下方確認按鈕後，案件將正式更新為「已通過」，並立即透過 **zhuant610@gmail.com** 發送包含上述理由與維修資訊的 Email 給申請人。")
 
     col_send, col_cancel = st.columns([1, 1])
     with col_send:
@@ -2711,7 +2711,7 @@ def render_reject_dialog_content(case_id, order_id, product_name, customer_email
     駁回小視窗內容：填寫具體駁回理由，確認後才更新案件並發送 Email
     """
     st.markdown(f"**訂單編號**：`{order_id}` ｜ **商品名稱**：`{product_name}`")
-    st.markdown(f"**買家通知信箱**：`{customer_email}`")
+    st.markdown(f"**申請人通知信箱**：`{customer_email}`")
     st.markdown("---")
 
     st.markdown("##### 📌 請勾選或自訂駁回主要原因：")
@@ -2729,9 +2729,9 @@ def render_reject_dialog_content(case_id, order_id, product_name, customer_email
     if rej_water: reasons.append("進水受潮氧化")
     if rej_pref: reasons.append("主觀手感/音質感受爭議且無硬體故障")
 
-    st.markdown("##### ✍️ 店家駁回詳細說明 (此內容將完整呈現於寄送給買家的 Email 通知中)：")
+    st.markdown("##### ✍️ 駁回詳細說明 (此內容將完整呈現於寄送的 Email 通知中)：")
     default_reject_text = (
-        f"經店長與 AI 複審，送檢商品特徵符合【{'、'.join(reasons) if reasons else '人為使用不當'}】，非屬原廠出廠新品不良或保固範疇，故無法受理免費退換貨申請。若有需要自費維修更換零件，請直接回覆此郵件聯繫我們取得報價。"
+        f"經專責複審與 AI 分析，送檢商品特徵符合【{'、'.join(reasons) if reasons else '人為使用不當'}】，非屬原廠出廠新品不良或保固範疇，故無法受理免費退換貨申請。若有需要自費維修更換零件，請直接回覆此郵件聯繫我們取得報價。"
     )
     custom_desc = st.text_area(
         "駁回詳細指示說明：",
@@ -2740,7 +2740,7 @@ def render_reject_dialog_content(case_id, order_id, product_name, customer_email
         key=f"dlg_rej_desc_{case_id}"
     )
 
-    st.caption("※ 點擊下方確認按鈕後，案件將正式更新為「已駁回」，並立即透過 **zhuant610@gmail.com** 發送包含駁回說明的 Email 給買家。")
+    st.caption("※ 點擊下方確認按鈕後，案件將正式更新為「已駁回」，並立即透過 **zhuant610@gmail.com** 發送包含駁回說明的 Email 給申請人。")
 
     col_send, col_cancel = st.columns([1, 1])
     with col_send:
@@ -2788,10 +2788,10 @@ def render_supplement_dialog_content(case_id, order_id, product_name, customer_e
     補件小視窗內容：填寫具體需補件的內容 (包含缺照片)，確認後才更新案件並發送 Email
     """
     st.markdown(f"**訂單編號**：`{order_id}` ｜ **商品型號**：`{product_name}`")
-    st.markdown(f"**買家通知信箱**：`{customer_email}`")
+    st.markdown(f"**申請人通知信箱**：`{customer_email}`")
     st.markdown("---")
 
-    st.markdown("##### 📌 請勾選需要買家補件的項目：")
+    st.markdown("##### 📌 請勾選需要補充說明的項目：")
     c1, c2 = st.columns(2)
     with c1:
         req_photo = st.checkbox("📷 缺少清晰瑕疵照片 (外觀/受損處特寫)", value=True, key=f"dlg_photo_{case_id}")
@@ -2801,15 +2801,15 @@ def render_supplement_dialog_content(case_id, order_id, product_name, customer_e
         req_test = st.checkbox("📊 缺少按鍵/微動檢測截圖 (Key-Test)", value=False, key=f"dlg_test_{case_id}")
 
     st.markdown("##### ✍️ 填寫需補件的具體說明與要求內容：")
-    default_text = "經店長與 AI 初步審核，目前退貨申訴缺乏關鍵瑕疵照片佐證。請於 3 日內補充清晰特寫照片或操作短片，以利完成出廠保固核銷與後續退換換新流程。"
+    default_text = "經專責審核與 AI 分析，目前退貨申訴缺乏關鍵瑕疵照片佐證。請於 3 日內補充清晰特寫照片或操作短片，以利完成出廠保固核銷與後續退換換新流程。"
     custom_desc = st.text_area(
-        "補件詳細指示 (此內容將完整呈現於寄送給買家的 Email 通知中)：",
+        "補件詳細指示 (此內容將完整呈現於寄送的 Email 通知中)：",
         value=default_text,
         height=110,
         key=f"dlg_desc_{case_id}"
     )
 
-    st.caption("※ 點擊下方確認按鈕後，案件將正式更新為「需補件」，並立即透過 **zhuant610@gmail.com** 發送補件 Email 給買家。")
+    st.caption("※ 點擊下方確認按鈕後，案件將正式更新為「需補件」，並立即透過 **zhuant610@gmail.com** 發送補件 Email 給申請人。")
 
     col_send, col_cancel = st.columns([1, 1])
     with col_send:
@@ -2825,7 +2825,7 @@ def render_supplement_dialog_content(case_id, order_id, product_name, customer_e
                 missing_items.append("缺少按鍵/微動檢測截圖 (Key-Test)")
 
             missing_str = "、".join(missing_items) if missing_items else "請依說明補充相關佐證"
-            final_note = f"【需補件項目】：{missing_str}\n【店長指示說明】：{custom_desc}"
+            final_note = f"【需補件項目】：{missing_str}\n【審核指示說明】：{custom_desc}"
 
             # 更新資料庫
             update_conn = sqlite3.connect(DB_FILE)
@@ -3277,7 +3277,7 @@ if current_user is None:
                     st.session_state["admin_authenticated"] = True
                     st.rerun()
         with qc2:
-            if st.button("👤 快速以【一般使用者 (買家)】身分登入 (buyer01 / buyer123)", use_container_width=True):
+            if st.button("👤 快速以【一般使用者】身分登入 (buyer01 / buyer123)", use_container_width=True):
                 ok, uinfo, msg = authenticate_user("buyer01", "buyer123")
                 if ok:
                     st.session_state["current_user"] = uinfo
@@ -3356,17 +3356,17 @@ st.session_state["admin_authenticated"] = is_admin
 # 畫面上方功能按鈕配置 (側邊欄已完全刪除；依身分角色分流按鈕)
 if not is_admin:
     top_nav_items = [
-        {"id": "📝 買家：提交退換貨申請", "label": "退換申請", "icon": "📝"},
-        {"id": "🔍 買家：查詢進度 / 補充照片", "label": "進度查詢", "icon": "🔍"}
+        {"id": "📝 提交退換貨申請", "label": "退換申請", "icon": "📝"},
+        {"id": "🔍 查詢進度 / 補充照片", "label": "進度查詢", "icon": "🔍"}
     ]
     valid_nav_ids = [item["id"] for item in top_nav_items] + ["⚙️ 系統設定 & 外觀風格"]
 else:
     top_nav_items = [
-        {"id": "🧑‍💼 店長：人機對照審核台", "label": "店長審核台", "icon": "🧑‍💼"},
-        {"id": "📊 老闆：BI 營運成效儀表板", "label": "BI 儀表板", "icon": "📊"},
+        {"id": "🧑‍💼 人機對照審核台", "label": "人機審核台", "icon": "🧑‍💼"},
+        {"id": "📊 BI 營運成效儀表板", "label": "BI 儀表板", "icon": "📊"},
         {"id": "👥 帳號清單與權限管理", "label": "帳號權限", "icon": "👥"},
-        {"id": "📝 買家：提交退換貨申請", "label": "買家申請", "icon": "📝"},
-        {"id": "🔍 買家：查詢進度 / 補充照片", "label": "進度查詢", "icon": "🔍"}
+        {"id": "📝 提交退換貨申請", "label": "退換申請", "icon": "📝"},
+        {"id": "🔍 查詢進度 / 補充照片", "label": "進度查詢", "icon": "🔍"}
     ]
     # 所有合法導航目標 (包含點擊左上角齒輪按鈕進入的獨立設定畫面區)
     valid_nav_ids = [item["id"] for item in top_nav_items] + ["⚙️ 系統設定 & 外觀風格", "⚙️ 系統設定 & API"]
@@ -3411,13 +3411,13 @@ with st.container(key="top_navigation_bar"):
 
 menu = st.session_state["active_nav_menu"]
 # 安全防護：非管理員嘗試存取管理後台頁面時自動導向
-if menu in ["🧑‍💼 店長：人機對照審核台", "📊 老闆：BI 營運成效儀表板", "👥 帳號清單與權限管理", "⚙️ 系統設定 & API"] and not is_admin:
+if menu in ["🧑‍💼 人機對照審核台", "📊 BI 營運成效儀表板", "👥 帳號清單與權限管理", "⚙️ 系統設定 & API"] and not is_admin:
     st.warning("⚠️ 該頁面僅限管理方存取，已自動導向買家服務門戶。")
-    menu = "📝 買家：提交退換貨申請"
+    menu = "📝 提交退換貨申請"
 
 # 主畫面頂端常駐登入者狀態標籤列
 user_pill_color = "#38bdf8" if is_admin else "#10b981"
-user_role_tag = "👑 平台管理員 (店長/審核方)" if is_admin else "👤 一般使用者 (買家)"
+user_role_tag = "👑 平台管理員 (審核方)" if is_admin else "👤 一般會員"
 _banner_bg = "rgba(30, 41, 59, 0.45)" if is_dark else "#ffffff"
 _banner_border = "rgba(148, 163, 184, 0.2)" if is_dark else "#e2e8f0"
 _banner_text = "#cbd5e1" if is_dark else "#334155"
@@ -3434,12 +3434,12 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-if menu == "📝 買家：提交退換貨申請":
+if menu == "📝 提交退換貨申請":
     st.markdown("""
     <div class="tech-hero">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
             <div>
-                <div class="hero-title">📱 買家端：電腦周邊售後與退換貨申請門戶</div>
+                <div class="hero-title">🛍️ 電腦周邊售後與退換貨申請門戶</div>
                 <div class="hero-subtitle">
                     專為 <strong>鍵盤、滑鼠、耳機</strong> 設計之 7 天鑑賞期瑕疵檢驗與智慧退換貨申訴通道
                 </div>
@@ -3467,7 +3467,7 @@ if menu == "📝 買家：提交退換貨申請":
         default_email = current_user.get("email", "") if current_user else ""
         if "app_return_customer_email" not in st.session_state:
             st.session_state["app_return_customer_email"] = default_email
-        customer_email = st.text_input("買家電子信箱 (Email) *必填，接收審核判決通知", key="app_return_customer_email", placeholder="例如：buyer@example.com")
+        customer_email = st.text_input("聯絡電子信箱 (Email) *必填，接收審核判決通知", key="app_return_customer_email", placeholder="例如：user@example.com")
         category = st.selectbox("周邊商品類別 (僅限電腦周邊)", PERIPHERAL_CATEGORIES, key="app_return_category")
         
         # 依據所選周邊顯示專屬檢驗指引
@@ -3587,9 +3587,9 @@ if menu == "📝 買家：提交退換貨申請":
 
     if submit_btn:
         if not order_id or not customer_email or not product_name or not reason:
-            st.error("請完整填寫訂單編號、買家電子信箱、周邊名稱與瑕疵說明！")
+            st.error("請完整填寫訂單編號、電子信箱、周邊名稱與瑕疵說明！")
         elif "@" not in customer_email or "." not in customer_email:
-            st.error("請填寫正確有效的買家電子信箱格式（例如：user@example.com）！")
+            st.error("請填寫正確有效的電子信箱格式（例如：user@example.com）！")
         elif not st.session_state.get("app_buyer_photos", []):
             st.error("❌ 申請失敗：為加速出廠保固核銷，系統規定【必須上傳至少一張瑕疵佐證照片】否則不給予受理申請！請使用相機或上方按鈕選取照片後再送出。")
         else:
@@ -3621,20 +3621,20 @@ if menu == "📝 買家：提交退換貨申請":
     if st.session_state.get("return_submitted_success_order"):
         succ_order = st.session_state.pop("return_submitted_success_order")
         succ_email = st.session_state.pop("return_submitted_success_email", "")
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 📦 買家完成信箱驗證並成功提交案件：{succ_order} -> 資料庫: {DB_FILE}")
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 📦 完成信箱驗證並成功提交案件：{succ_order} -> 資料庫: {DB_FILE}")
         st.success(f"🎉 驗證成功！退換貨申請已正式提交！您的案件編號為 **`{succ_order}`**。")
         if succ_email:
-            st.info(f"📧 審核結果將寄發至您的電子信箱：**`{succ_email}`**。您亦可隨時在「🔍 買家：查詢進度 / 補充照片」輸入訂單編號追蹤審核狀態。")
+            st.info(f"📧 審核結果將寄發至您的電子信箱：**`{succ_email}`**。您亦可隨時在「🔍 查詢進度 / 補充照片」輸入訂單編號追蹤審核狀態。")
         st.balloons()
 
 # ==========================================
 # 買家門戶 模組二：查詢申請進度 / 補充照片 (Buyer Query & Supplement)
 # ==========================================
-elif menu == "🔍 買家：查詢進度 / 補充照片":
+elif menu == "🔍 查詢進度 / 補充照片":
     st.markdown("""
     <div class="tech-hero">
         <div>
-            <div class="hero-title">🔍 買家端：退貨審核進度查詢與照片補傳</div>
+            <div class="hero-title">🔍 退貨審核進度查詢與照片補傳</div>
             <div class="hero-subtitle">
                 輸入您的 <strong>訂單編號</strong> 或 <strong>電子信箱</strong>，隨時追蹤退換貨最新處理狀態。
             </div>
@@ -3642,7 +3642,7 @@ elif menu == "🔍 買家：查詢進度 / 補充照片":
     </div>
     """, unsafe_allow_html=True)
 
-    query_input = st.text_input("輸入訂單編號 (例如: ORD-PERI-xxxx) 或 買家電子信箱", placeholder="請輸入完整訂單編號或送出申請時填寫的 Email")
+    query_input = st.text_input("輸入訂單編號 (例如: ORD-PERI-xxxx) 或 電子信箱", placeholder="請輸入完整訂單編號或送出申請時填寫的 Email")
 
     if query_input:
         conn = sqlite3.connect(DB_FILE)
@@ -3667,7 +3667,7 @@ elif menu == "🔍 買家：查詢進度 / 補充照片":
                 elif cur_status == '已駁回':
                     status_badge = '<span class="status-badge-red">🚫 申請已駁回</span>'
                 else:
-                    status_badge = '<span class="status-badge-pending">⏳ 待店長審核中</span>'
+                    status_badge = '<span class="status-badge-pending">⏳ 待審核中</span>'
 
                 with st.container():
                     st.markdown(f"""
@@ -3684,7 +3684,7 @@ elif menu == "🔍 買家：查詢進度 / 補充照片":
                     </div>
                     """, unsafe_allow_html=True)
 
-                    # 顯示買家已提交之佐證照片
+                    # 顯示申請人已提交之佐證照片
                     b_img_list = decode_images_from_db(item.get('image_data'), item.get('images_json') if 'images_json' in item else None)
                     if b_img_list:
                         if len(b_img_list) == 1:
@@ -3698,7 +3698,7 @@ elif menu == "🔍 買家：查詢進度 / 補充照片":
 
                     # 若狀態為「需補件」，提供補件說明與上傳/拍照功能
                     if cur_status == "需補件":
-                        st.info(f"**📢 客服店長補件指示說明**：\n\n{item['review_comment'] or '請補充清晰之瑕疵外觀照片或操作測試短片。'}")
+                        st.info(f"**📢 專責客服補件指示說明**：\n\n{item['review_comment'] or '請補充清晰之瑕疵外觀照片或操作測試短片。'}")
                         
                         st.markdown("##### 📷 補傳瑕疵照片佐證資料：")
                         st.caption("支援手機直接鏡頭拍照或從相簿/檔案上傳")
@@ -3784,13 +3784,13 @@ elif menu == "🔍 買家：查詢進度 / 補充照片":
                                 cur = update_conn.cursor()
                                 cur.execute("""
                                     UPDATE return_requests 
-                                    SET image_data = ?, images_json = ?, status = '待審核', customer_reason = customer_reason || ' [買家已於 ' || ? || ' 補上 ' || ? || ' 張佐證照片]'
+                                    SET image_data = ?, images_json = ?, status = '待審核', customer_reason = customer_reason || ' [已於 ' || ? || ' 補上 ' || ? || ' 張佐證照片]'
                                     WHERE id = ?
                                 """, (p_blob, j_str, datetime.now().strftime("%Y-%m-%d %H:%M"), len(supp_all_bytes), item['id']))
                                 update_conn.commit()
                                 update_conn.close()
                                 st.session_state[supp_key] = []
-                                st.success(f"✅ 共 {len(supp_all_bytes)} 張補件照片已成功上傳！案件已重新提交給客服店長進行二次審核。")
+                                st.success(f"✅ 共 {len(supp_all_bytes)} 張補件照片已成功上傳！案件已重新提交進行二次審核。")
                                 st.rerun()
                             else:
                                 st.warning("請先拍照或選取要上傳的照片檔案！")
@@ -3837,14 +3837,14 @@ elif menu == "🔍 買家：查詢進度 / 補充照片":
 # ==========================================
 # 模組一：店長人機對照審核台 (HITL)
 # ==========================================
-elif menu == "🧑‍💼 店長：人機對照審核台":
+elif menu == "🧑‍💼 人機對照審核台":
     st.markdown("""
     <div class="tech-hero">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
             <div>
-                <div class="hero-title">🧑‍💼 店長端：周邊人機協同審核台 (Human-in-the-Loop)</div>
+                <div class="hero-title">🛡️💼 周邊人機協同審核台 (Human-in-the-Loop)</div>
                 <div class="hero-subtitle">
-                    透過 <strong>紅黃綠燈風險分流</strong>，店長精準對照買家申訴與 AI 佐證，秒級裁決核准、補件或駁回。
+                    透過 <strong>紅黃綠燈風險分流</strong>，精準對照客戶申訴與 AI 佐證，秒級裁決核准、補件或駁回。
                 </div>
             </div>
             <div>
@@ -3858,15 +3858,15 @@ elif menu == "🧑‍💼 店長：人機對照審核台":
     if "last_email_notification" in st.session_state:
         n_info = st.session_state.pop("last_email_notification")
         if n_info.get("ok"):
-            st.success(f"📧 **審核裁決完成，通知郵件已成功寄出！**\n\n- 訂單編號：**{n_info['order_id']}** (狀態更新為：`{n_info['status']}`)\n- 收件買家：`{n_info['to']}`\n- 寄件帳號：`{SENDER_EMAIL}`\n- 發送狀態：{n_info['msg']}")
+            st.success(f"📧 **審核裁決完成，通知郵件已成功寄出！**\n\n- 訂單編號：**{n_info['order_id']}** (狀態更新為：`{n_info['status']}`)\n- 收件人信箱：`{n_info['to']}`\n- 寄件帳號：`{SENDER_EMAIL}`\n- 發送狀態：{n_info['msg']}")
         else:
-            st.error(f"⚠️ **審核裁決已更新至資料庫，但 Email 發送未成功**！\n\n- 訂單編號：**{n_info['order_id']}** (狀態更新為：`{n_info['status']}`)\n- 收件買家：`{n_info['to']}`\n- 寄件帳號：`{SENDER_EMAIL}`\n- 失敗原因：\n{n_info['msg']}\n\n👉 *提示：請前往「⚙️ 系統設定 & API」填寫 Google 帳戶 16 碼應用程式密碼，即可正常發送信件。*")
+            st.error(f"⚠️ **審核裁決已更新至資料庫，但 Email 發送未成功**！\n\n- 訂單編號：**{n_info['order_id']}** (狀態更新為：`{n_info['status']}`)\n- 收件人信箱：`{n_info['to']}`\n- 寄件帳號：`{SENDER_EMAIL}`\n- 失敗原因：\n{n_info['msg']}\n\n👉 *提示：請前往「⚙️ 系統設定 & API」填寫 Google 帳戶 16 碼應用程式密碼，即可正常發送信件。*")
 
     # 讀取案件
     conn = sqlite3.connect(DB_FILE)
     df = pd.read_sql_query("SELECT * FROM return_requests ORDER BY id DESC", conn)
     conn.close()
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 🧑‍💼 店長後台讀取資料庫：目前共 {len(df)} 筆案件 (待審核: {len(df[df['status'] == '待審核'])} 件) -> 來源: {DB_FILE}")
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 🧑‍💼 審核後台讀取資料庫：目前共 {len(df)} 筆案件 (待審核: {len(df[df['status'] == '待審核'])} 件) -> 來源: {DB_FILE}")
 
     # 頂部狀態指標卡片
     c1, c2, c3, c4 = st.columns(4)
@@ -3890,7 +3890,7 @@ elif menu == "🧑‍💼 店長：人機對照審核台":
         filter_cat = st.selectbox("🎯 篩選周邊品類", ["全部周邊"] + PERIPHERAL_CATEGORIES, index=0)
     with filter_col3:
         st.markdown("<div style='margin-top:28px;'></div>", unsafe_allow_html=True)
-        if st.button("🔄 刷新最新案件", use_container_width=True, help="點擊即時重新讀取資料庫，載入買家最新提交的申請"):
+        if st.button("🔄 刷新最新案件", use_container_width=True, help="點擊即時重新讀取資料庫，載入最新提交的申請"):
             st.rerun()
 
     filtered_df = df.copy()
@@ -3916,9 +3916,9 @@ elif menu == "🧑‍💼 店長：人機對照審核台":
                 left_col, right_col = st.columns([1, 1], gap="large")
 
                 with left_col:
-                    st.markdown("#### 👤 買家申訴原始資料")
+                    st.markdown("#### 👤 客戶申訴原始資料")
                     target_email = row['customer_email'] if ('customer_email' in row and row['customer_email']) else '未提供'
-                    st.write(f"**買家信箱**：`{target_email}`")
+                    st.write(f"**申請人信箱**：`{target_email}`")
                     st.write(f"**商品品類**：{row['product_category']}")
                     st.write(f"**周邊型號**：`{row['product_name']}`")
                     st.write(f"**申訴原因**：{row['customer_reason']}")
@@ -3930,20 +3930,20 @@ elif menu == "🧑‍💼 店長：人機對照審核台":
                     elif len(img_list) == 1:
                         try:
                             img = Image.open(io.BytesIO(img_list[0]))
-                            st.image(img, caption="買家佐證圖片 (共 1 張)", use_container_width=True)
+                            st.image(img, caption="佐證圖片 (共 1 張)", use_container_width=True)
                         except Exception:
-                            st.image(img_list[0], caption="買家佐證圖片 (共 1 張)", use_container_width=True)
+                            st.image(img_list[0], caption="佐證圖片 (共 1 張)", use_container_width=True)
                     else:
                         # 照片為一張以上：提供選取開啟照片功能
-                        st.markdown(f"**📸 買家佐證照片 (共 {len(img_list)} 張，點選標籤開啟檢視)：**")
+                        st.markdown(f"**📸 佐證照片 (共 {len(img_list)} 張，點選標籤開啟檢視)：**")
                         photo_tabs = st.tabs([f"🖼️ 照片 #{i+1}" for i in range(len(img_list))])
                         for i, tab in enumerate(photo_tabs):
                             with tab:
                                 try:
                                     img = Image.open(io.BytesIO(img_list[i]))
-                                    st.image(img, caption=f"買家佐證圖片 #{i+1} / 共 {len(img_list)} 張 (點擊可放大)", use_container_width=True)
+                                    st.image(img, caption=f"佐證圖片 #{i+1} / 共 {len(img_list)} 張 (點擊可放大)", use_container_width=True)
                                 except Exception:
-                                    st.image(img_list[i], caption=f"買家佐證圖片 #{i+1} / 共 {len(img_list)} 張", use_container_width=True)
+                                    st.image(img_list[i], caption=f"佐證圖片 #{i+1} / 共 {len(img_list)} 張", use_container_width=True)
                         
                         with st.expander(f"🔍 一覽全部 {len(img_list)} 張照片縮圖對照"):
                             grid_cols = st.columns(min(len(img_list), 4))
@@ -3963,7 +3963,7 @@ elif menu == "🧑‍💼 店長：人機對照審核台":
 
                     # 審核操作區 (僅待審核案件可操作)
                     if row['status'] == "待審核":
-                        st.markdown("#### ✍️ 店長最終裁決 (點選開啟決策視窗，自訂附言與維修排程)")
+                        st.markdown("#### ✍️ 審核最終裁決 (點選開啟決策視窗，自訂附言與維修排程)")
                         
                         btn_c1, btn_c2, btn_c3 = st.columns(3)
                         with btn_c1:
@@ -4046,8 +4046,8 @@ elif menu == "🧑‍💼 店長：人機對照審核台":
 
                         # 若為已核准案件，允許店長隨時自訂更新維修進度與日期
                         if row['status'] == "已通過":
-                            with st.expander("🛠️ 店長自訂更新維修進度與送回時程", expanded=False):
-                                st.caption("在此修改之維修進度、預計送回日期與工程師編號，將即時同步至買家端查詢頁面。")
+                            with st.expander("🛠️ 自訂更新維修進度與送回時程", expanded=False):
+                                st.caption("在此修改之維修進度、預計送回日期與工程師編號，將即時同步至前台查詢頁面。")
                                 up_c1, up_c2 = st.columns(2)
                                 with up_c1:
                                     cur_rep_date = r_date or (datetime.now() + pd.Timedelta(days=5)).strftime("%Y-%m-%d")
@@ -4057,12 +4057,12 @@ elif menu == "🧑‍💼 店長：人機對照審核台":
                                     m_tech_id = st.text_input("維修人員工作編號", value=cur_tech_id, key=f"m_tech_{row['id']}")
                                 
                                 cur_status_opts = [
-                                    "［待收件］已核准維修，請買家將瑕疵品包裝寄回",
+                                    "［待收件］已核准維修，請將瑕疵品包裝寄回",
                                     "［檢測中］收到商品，工程師進行微動/軸體/電氣檢測",
                                     "［更換零件中］已拆機更換原廠零組件",
                                     "［校正完畢］清潔校正與全功能測試正常",
                                     "［已寄出］已交付物流黑貓宅急便，配送送回中",
-                                    "［完工結案］買家已簽收完修良品"
+                                    "［完工結案］客戶已簽收完修良品"
                                 ]
                                 def_idx = 0
                                 for i, opt in enumerate(cur_status_opts):
@@ -4071,9 +4071,9 @@ elif menu == "🧑‍💼 店長：人機對照審核台":
                                         break
                                 
                                 m_rep_status = st.selectbox("維修進度狀態", cur_status_opts, index=def_idx, key=f"m_status_{row['id']}")
-                                m_notes = st.text_area("維修詳細進度說明 (買家查詢可見)", value=row.get('review_comment', '') or "", height=80, key=f"m_notes_{row['id']}")
+                                m_notes = st.text_area("維修詳細進度說明 (前台查詢可見)", value=row.get('review_comment', '') or "", height=80, key=f"m_notes_{row['id']}")
 
-                                if st.button("💾 儲存並同步更新至買家端查詢", type="primary", key=f"m_save_{row['id']}"):
+                                if st.button("💾 儲存並同步更新至前台查詢", type="primary", key=f"m_save_{row['id']}"):
                                     up_conn = sqlite3.connect(DB_FILE)
                                     up_cur = up_conn.cursor()
                                     up_cur.execute("""
@@ -4083,18 +4083,18 @@ elif menu == "🧑‍💼 店長：人機對照審核台":
                                     """, (m_rep_date.strip(), m_tech_id.strip(), m_rep_status, m_notes.strip(), row['id']))
                                     up_conn.commit()
                                     up_conn.close()
-                                    st.success("✅ 維修進度已成功更新！買家於前台輸入訂單編號即可即時查得最新狀態。")
+                                    st.success("✅ 維修進度已成功更新！前台輸入訂單編號即可即時查得最新狀態。")
                                     st.rerun()
 
 # ==========================================
 # 模組三：BI 營運成效儀表板 (限定電腦周邊)
 # ==========================================
-elif menu == "📊 老闆：BI 營運成效儀表板":
+elif menu == "📊 BI 營運成效儀表板":
     st.markdown("""
     <div class="tech-hero">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
             <div>
-                <div class="hero-title">📊 老闆端：電腦周邊逆物流與客訴 BI 營運儀表板</div>
+                <div class="hero-title">📊 電腦周邊逆物流與客訴 BI 營運儀表板</div>
                 <div class="hero-subtitle">
                     呈現導入 <strong>鍵盤/滑鼠/耳機 AI 協同審核</strong> 後之核心商業 KPI、退貨品類佔比與防詐欺成效。
                 </div>
@@ -4196,7 +4196,7 @@ elif menu == "👥 帳號清單與權限管理":
             <div>
                 <div class="hero-title">👥 系統註冊會員與角色權限管理</div>
                 <div class="hero-subtitle">
-                    即時檢視 SQLite <code>users</code> 資料表，管理買家與店長之角色權限
+                    即時檢視 SQLite <code>users</code> 資料表，管理平台會員與管理員之角色權限
                 </div>
             </div>
             <div>
@@ -4213,8 +4213,8 @@ elif menu == "👥 帳號清單與權限管理":
 
     m1, m2, m3 = st.columns(3)
     m1.metric("總註冊帳號數", f"{total_u} 位")
-    m2.metric("平台管理員 (店長)", f"{admin_u} 位")
-    m3.metric("一般使用者 (買家)", f"{buyer_u} 位")
+    m2.metric("平台管理員", f"{admin_u} 位")
+    m3.metric("一般使用者", f"{buyer_u} 位")
 
     st.markdown("---")
     st.subheader("📋 會員名冊總覽")
@@ -4353,7 +4353,7 @@ elif menu in ["⚙️ 系統設定 & 外觀風格", "⚙️ 系統設定 & API"]
     c_u1, c_u2 = st.columns([1, 1])
     with c_u1:
         st.markdown(f"**使用者名稱**：`{current_user['username']}`")
-        st.markdown(f"**角色身分**：`{'👑 平台管理員 (店長/審核)' if is_admin else '👤 一般使用者 (買家)'}`")
+        st.markdown(f"**角色身分**：`{'👑 平台管理員 (審核方)' if is_admin else '👤 一般會員'}`")
     with c_u2:
         st.markdown(f"**綁定電子信箱**：`{current_user.get('email', '未填寫')}`")
         st.markdown(f"**註冊時間**：`{current_user.get('created_at', '系統預設')}`")
@@ -4448,12 +4448,12 @@ elif menu in ["⚙️ 系統設定 & 外觀風格", "⚙️ 系統設定 & API"]
 
     else:
         # ==========================================
-        # 客戶端 / 買家端專屬功能 (圖2 不包含圖3 的任何管理設定)
+        # 會員專屬功能
         # ==========================================
         st.markdown("---")
         st.info("""
         **🛍️ 會員售後服務須知與系統指引：**
-        - 📝 **申請售後**：如需申請機械/薄膜鍵盤、電競滑鼠或耳機退換貨/維修，請點擊上方【📝 退換申請】（或【📝 買家申請】）。
+        - 📝 **申請售後**：如需申請機械/薄膜鍵盤、電競滑鼠或耳機退換貨/維修，請點擊上方【📝 退換申請】。
         - 🔍 **進度查詢**：如需查詢案件最新審核進度或補充上傳外觀/瑕疵照片，請點擊上方【🔍 進度查詢】。
         - 🎨 **風格切換**：可隨時於上方切換「🌙 深色」或「☀️ 淺色」模式，系統將自動套用對應的介面配色。
         - 📧 **系統客服信箱**：`zhuant610@gmail.com`
