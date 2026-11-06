@@ -165,6 +165,27 @@ DARK_CSS = """
         transition: all 0.2s ease !important;
     }
 
+    /* 頂部右側獨立「登出」按鈕風格 (深色模式) */
+    .st-key-top_navigation_bar [data-testid="stColumn"]:last-child button {
+        border-radius: 9px !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        height: 44px !important;
+        min-height: 44px !important;
+        white-space: nowrap !important;
+        color: #fca5a5 !important;
+        border: 1.5px solid rgba(239, 68, 68, 0.45) !important;
+        background: rgba(239, 68, 68, 0.12) !important;
+        transition: all 0.2s ease !important;
+    }
+    .st-key-top_navigation_bar [data-testid="stColumn"]:last-child button:hover {
+        background: rgba(239, 68, 68, 0.28) !important;
+        border-color: #ef4444 !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 14px rgba(239, 68, 68, 0.5) !important;
+        transform: translateY(-1px);
+    }
+
     /* 確保固定頂部導航列不遮擋下方主內容區塊 */
     .main .block-container {
         padding-top: 86px !important;
@@ -1101,6 +1122,27 @@ LIGHT_CSS = """
         min-height: 44px !important;
         white-space: nowrap !important;
         transition: all 0.2s ease !important;
+    }
+
+    /* 頂部右側獨立「登出」按鈕風格 (淺色模式) */
+    .st-key-top_navigation_bar [data-testid="stColumn"]:last-child button {
+        border-radius: 9px !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        height: 44px !important;
+        min-height: 44px !important;
+        white-space: nowrap !important;
+        color: #dc2626 !important;
+        border: 1.5px solid rgba(220, 38, 38, 0.35) !important;
+        background: rgba(254, 242, 242, 0.9) !important;
+        transition: all 0.2s ease !important;
+    }
+    .st-key-top_navigation_bar [data-testid="stColumn"]:last-child button:hover {
+        background: rgba(254, 226, 226, 1) !important;
+        border-color: #dc2626 !important;
+        color: #b91c1c !important;
+        box-shadow: 0 2px 10px rgba(220, 38, 38, 0.2) !important;
+        transform: translateY(-1px);
     }
 
     /* 確保固定頂部導航列不遮擋下方主內容區塊 */
@@ -2942,9 +2984,9 @@ if "active_nav_menu" not in st.session_state or st.session_state["active_nav_men
 # ==========================================
 with st.container(key="top_navigation_bar"):
     if is_admin:
-        top_cols = st.columns([0.65, 2.2, 2.2, 2.2, 2.2, 2.2])
+        top_cols = st.columns([0.65, 2.0, 2.0, 2.0, 2.0, 2.0, 0.85])
     else:
-        top_cols = st.columns([0.65, 4.5, 4.5])
+        top_cols = st.columns([0.65, 4.2, 4.2, 0.85])
 
     # 1. 畫面左上角：齒輪圖案獨立按鈕 (點擊後直接進入獨立設定畫面區，非下拉選單)
     with top_cols[0]:
@@ -2961,6 +3003,13 @@ with st.container(key="top_navigation_bar"):
             if st.button(item["id"], key=f"top_nav_btn_{idx}", type=btn_type, use_container_width=True):
                 st.session_state["active_nav_menu"] = item["id"]
                 st.rerun()
+
+    # 3. 畫面最右側：登出按鈕 (按鈕僅「登出」兩個字)
+    with top_cols[-1]:
+        if st.button("登出", key="btn_top_logout", type="secondary", use_container_width=True):
+            st.session_state["current_user"] = None
+            st.session_state["admin_authenticated"] = False
+            st.rerun()
 
 menu = st.session_state["active_nav_menu"]
 # 安全防護：非管理員嘗試存取管理後台頁面時自動導向
@@ -3844,21 +3893,15 @@ elif menu in ["⚙️ 系統設定 & 外觀風格", "⚙️ 系統設定 & API"]
 
     st.markdown("---")
 
-    # 區塊 2: 👤 當前登入者帳號資料與登出
+    # 區塊 2: 👤 當前登入者帳號資料
     st.markdown("### 👤 當前登入者帳號資料")
-    c_u1, c_u2, c_u3 = st.columns([2, 2, 1.5])
+    c_u1, c_u2 = st.columns([1, 1])
     with c_u1:
         st.markdown(f"**使用者名稱**：`{current_user['username']}`")
         st.markdown(f"**角色身分**：`{'👑 平台管理員 (店長/審核)' if is_admin else '👤 一般使用者 (買家)'}`")
     with c_u2:
         st.markdown(f"**綁定電子信箱**：`{current_user.get('email', '未填寫')}`")
         st.markdown(f"**註冊時間**：`{current_user.get('created_at', '系統預設')}`")
-    with c_u3:
-        st.markdown("<div style='margin-top:6px;'></div>", unsafe_allow_html=True)
-        if st.button("🚪 登出系統", key="settings_page_logout_btn", type="secondary", use_container_width=True):
-            st.session_state["current_user"] = None
-            st.session_state["admin_authenticated"] = False
-            st.rerun()
 
     # 區塊 3: 管理方核心 AI 與 API 串接設定 (或買家專屬提示)
     if is_admin:
