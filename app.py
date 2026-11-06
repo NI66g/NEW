@@ -46,30 +46,60 @@ is_dark = ("深色" in st.session_state.get("app_theme_choice", "🌙 深色"))
 # ==========================================
 DARK_CSS = """
 <style>
-        /* 隱藏頂部 header 與所有無用的右上角選單、裝飾線與浮水印 */
-    header[data-testid="stHeader"],
-    header,
-    #MainMenu,
-    [data-testid="stToolbar"],
-    #stDecoration,
-    [data-testid="stDecoration"],
-    [data-testid="stStatusWidget"],
+        /* 徹底銷毀所有 Streamlit 官方浮水印、底部嵌入列 (Built with Streamlit / Fullscreen) 與裝飾 */
+    div[class*="embeddedAppMetaInfoBar"],
+    div[class*="EmbeddedAppMetaInfoBar"],
+    div[class*="viewerBadge"],
+    div[class*="ViewerBadge"],
+    div[class*="StatusWidget"],
+    div[class*="FloatingContainer"],
+    div[class*="bottom-bar"],
+    div[class*="BottomBar"],
+    div[data-testid*="embedded"],
+    div[data-testid*="meta"],
+    div[data-testid*="badge"],
     .viewerBadge_container__r5tak,
     .viewerBadge_link__1SuqQ,
     footer,
-    div[class*="viewerBadge"],
-    div[class*="StatusWidget"],
-    div[class*="FloatingContainer"],
     footer[class*="footer"],
-    [data-testid="stFooter"] {
+    [data-testid="stFooter"],
+    #MainMenu,
+    header[data-testid="stHeader"],
+    header,
+    [data-testid="stToolbar"],
+    [data-testid="stDecoration"],
+    #stDecoration {
         display: none !important;
         visibility: hidden !important;
         height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
         width: 0 !important;
         margin: 0 !important;
         padding: 0 !important;
+        border: none !important;
+        outline: none !important;
         opacity: 0 !important;
         pointer-events: none !important;
+        overflow: hidden !important;
+    }
+
+    /* 徹底消除整體視窗四周圍所有預設邊框 (上下左右白邊) */
+    html,
+    body,
+    #root,
+    #root > div,
+    .stApp,
+    section.main,
+    .block-container,
+    [data-testid="stAppViewContainer"],
+    [data-testid="stAppViewBlockContainer"],
+    div[class*="embeddedApp"],
+    div[class*="EmbeddedApp"],
+    div[class*="appview-container"] {
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
     }
 
     /* 完全刪除與徹底隱藏側邊欄及任何側邊欄展開/收折按鈕 (所有裝置螢幕尺寸通用) */
@@ -1005,30 +1035,60 @@ DARK_CSS = """
 # ==========================================
 LIGHT_CSS = """
 <style>
-        /* 隱藏頂部 header 與所有無用的右上角選單、裝飾線與浮水印 */
-    header[data-testid="stHeader"],
-    header,
-    #MainMenu,
-    [data-testid="stToolbar"],
-    #stDecoration,
-    [data-testid="stDecoration"],
-    [data-testid="stStatusWidget"],
+        /* 徹底銷毀所有 Streamlit 官方浮水印、底部嵌入列 (Built with Streamlit / Fullscreen) 與裝飾 */
+    div[class*="embeddedAppMetaInfoBar"],
+    div[class*="EmbeddedAppMetaInfoBar"],
+    div[class*="viewerBadge"],
+    div[class*="ViewerBadge"],
+    div[class*="StatusWidget"],
+    div[class*="FloatingContainer"],
+    div[class*="bottom-bar"],
+    div[class*="BottomBar"],
+    div[data-testid*="embedded"],
+    div[data-testid*="meta"],
+    div[data-testid*="badge"],
     .viewerBadge_container__r5tak,
     .viewerBadge_link__1SuqQ,
     footer,
-    div[class*="viewerBadge"],
-    div[class*="StatusWidget"],
-    div[class*="FloatingContainer"],
     footer[class*="footer"],
-    [data-testid="stFooter"] {
+    [data-testid="stFooter"],
+    #MainMenu,
+    header[data-testid="stHeader"],
+    header,
+    [data-testid="stToolbar"],
+    [data-testid="stDecoration"],
+    #stDecoration {
         display: none !important;
         visibility: hidden !important;
         height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
         width: 0 !important;
         margin: 0 !important;
         padding: 0 !important;
+        border: none !important;
+        outline: none !important;
         opacity: 0 !important;
         pointer-events: none !important;
+        overflow: hidden !important;
+    }
+
+    /* 徹底消除整體視窗四周圍所有預設邊框 (上下左右白邊) */
+    html,
+    body,
+    #root,
+    #root > div,
+    .stApp,
+    section.main,
+    .block-container,
+    [data-testid="stAppViewContainer"],
+    [data-testid="stAppViewBlockContainer"],
+    div[class*="embeddedApp"],
+    div[class*="EmbeddedApp"],
+    div[class*="appview-container"] {
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
     }
 
     /* 完全刪除與徹底隱藏側邊欄及任何側邊欄展開/收折按鈕 (所有裝置螢幕尺寸通用) */
