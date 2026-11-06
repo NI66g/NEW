@@ -3084,17 +3084,24 @@ if current_user is None:
             margin: 0 !important;
             padding: 0 !important;
             overflow: hidden !important;
-            background-color: #0b1120 !important;
+            background: linear-gradient(to right, #011b32 0%, #0d162d 50%, #200a38 100%) !important;
         }}
         .cat-fullscreen-cover img {{
             width: 100vw !important;
             height: 100vh !important;
             object-fit: cover !important;
-            object-position: center center !important;
+            object-position: center bottom !important;
             display: block !important;
             border: none !important;
             margin: 0 !important;
             padding: 0 !important;
+        }}
+
+        @media (max-aspect-ratio: 16/10) {{
+            .cat-fullscreen-cover img {{
+                object-fit: contain !important;
+                object-position: center center !important;
+            }}
         }}
 
         /* 右上角固定懸浮「登入」按鈕 */
