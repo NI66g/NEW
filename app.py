@@ -1184,6 +1184,65 @@ LIGHT_CSS = """
         transition: all 0.2s ease !important;
     }
 
+    /* 頂部選單【作用中 / 選取中】高亮按鈕 (淺色模式 - 絕對純白文字 + 鮮明皇家藍背景) */
+    .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button[kind="primary"],
+    .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button[data-testid="baseButton-primary"] {
+        background: #2563eb !important;
+        background-color: #2563eb !important;
+        border: none !important;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35) !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+    }
+    .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button[kind="primary"] *,
+    .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button[kind="primary"] p,
+    .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button[kind="primary"] span,
+    .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button[data-testid="baseButton-primary"] *,
+    .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button[data-testid="baseButton-primary"] p,
+    .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button[data-testid="baseButton-primary"] span {
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        font-weight: 700 !important;
+    }
+    .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button[kind="primary"]:hover,
+    .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button[data-testid="baseButton-primary"]:hover {
+        background: #1d4ed8 !important;
+        background-color: #1d4ed8 !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+    }
+    .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button[kind="primary"]:hover * {
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+    }
+
+    /* 頂部選單【未選取】按鈕 (淺色模式 - 深黑文字 + 白底微框) */
+    .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button:not([kind="primary"]):not([data-testid="baseButton-primary"]) {
+        background: #ffffff !important;
+        background-color: #ffffff !important;
+        border: 1.5px solid #cbd5e1 !important;
+        color: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
+    }
+    .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button:not([kind="primary"]):not([data-testid="baseButton-primary"]) *,
+    .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button:not([kind="primary"]):not([data-testid="baseButton-primary"]) p,
+    .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button:not([kind="primary"]):not([data-testid="baseButton-primary"]) span {
+        color: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
+        font-weight: 600 !important;
+    }
+    .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button:not([kind="primary"]):not([data-testid="baseButton-primary"]):hover {
+        background: #eff6ff !important;
+        background-color: #eff6ff !important;
+        border-color: #2563eb !important;
+        color: #1d4ed8 !important;
+        -webkit-text-fill-color: #1d4ed8 !important;
+    }
+    .st-key-top_navigation_bar [data-testid="stColumn"]:not(:first-child) button:not([kind="primary"]):not([data-testid="baseButton-primary"]):hover * {
+        color: #1d4ed8 !important;
+        -webkit-text-fill-color: #1d4ed8 !important;
+    }
+
     /* 頂部右側獨立「登出」按鈕風格 (淺色模式) */
     .st-key-top_navigation_bar [data-testid="stColumn"]:last-child button {
         border-radius: 9px !important;
@@ -1562,18 +1621,25 @@ LIGHT_CSS = """
         overflow: hidden;
     }
     .hero-title {
-        background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-size: 26px;
-        font-weight: 800;
-        letter-spacing: -0.5px;
-        margin-bottom: 6px;
+        color: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
+        background: none !important;
+        font-size: 25px !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.5px !important;
+        margin-bottom: 6px !important;
     }
     .hero-subtitle {
-        color: #475569;
-        font-size: 14px;
-        line-height: 1.6;
+        color: #334155 !important;
+        -webkit-text-fill-color: #334155 !important;
+        font-size: 14.5px !important;
+        line-height: 1.6 !important;
+        font-weight: 500 !important;
+    }
+    .hero-subtitle strong {
+        color: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
+        font-weight: 700 !important;
     }
     .badge-item {
         display: inline-flex;
@@ -1678,7 +1744,7 @@ LIGHT_CSS = """
         border: 1px solid #cbd5e1 !important;
     }
 
-    /* 按鈕樣式淺色 */
+    /* 按鈕樣式淺色 (Secondary 次要按鈕：純白底深黑字) */
     .stButton > button,
     div[data-testid="stButton"] > button,
     button[data-testid="baseButton-secondary"],
@@ -1688,33 +1754,85 @@ LIGHT_CSS = """
         border-radius: 10px !important;
         font-weight: 600 !important;
         transition: all 0.2s ease !important;
-        border: 1px solid #cbd5e1 !important;
-        color: #1e293b !important;
+        border: 1.5px solid #cbd5e1 !important;
+        color: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
+    }
+    .stButton > button *,
+    div[data-testid="stButton"] > button *,
+    button[data-testid="baseButton-secondary"] *,
+    button[kind="secondary"] * {
+        color: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
     }
     .stButton > button:hover,
     div[data-testid="stButton"] > button:hover,
     button[data-testid="baseButton-secondary"]:hover,
     button[kind="secondary"]:hover {
-        background-color: #f1f5f9 !important;
-        background: #f1f5f9 !important;
-        border-color: #0284c7 !important;
-        color: #0284c7 !important;
+        background-color: #eff6ff !important;
+        background: #eff6ff !important;
+        border-color: #2563eb !important;
+        color: #1d4ed8 !important;
+        -webkit-text-fill-color: #1d4ed8 !important;
         transform: translateY(-2px) !important;
-        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15) !important;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15) !important;
     }
+    .stButton > button:hover *,
+    div[data-testid="stButton"] > button:hover *,
+    button[data-testid="baseButton-secondary"]:hover *,
+    button[kind="secondary"]:hover * {
+        color: #1d4ed8 !important;
+        -webkit-text-fill-color: #1d4ed8 !important;
+    }
+
+    /* 所有 Primary 主要功能按鈕 (淺色模式 - 絕對純白文字 + 皇家藍背景，高對比無暗字) */
     .stButton > button[kind="primary"],
+    .stButton > button[data-testid="baseButton-primary"],
+    button[kind="primary"],
     button[data-testid="baseButton-primary"] {
-        background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%) !important;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
         background-color: #2563eb !important;
         border: none !important;
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35) !important;
         color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        font-weight: 700 !important;
+    }
+    .stButton > button[kind="primary"] *,
+    .stButton > button[kind="primary"] p,
+    .stButton > button[kind="primary"] span,
+    .stButton > button[data-testid="baseButton-primary"] *,
+    .stButton > button[data-testid="baseButton-primary"] p,
+    .stButton > button[data-testid="baseButton-primary"] span,
+    button[kind="primary"] *,
+    button[kind="primary"] p,
+    button[kind="primary"] span,
+    button[data-testid="baseButton-primary"] *,
+    button[data-testid="baseButton-primary"] p,
+    button[data-testid="baseButton-primary"] span {
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        fill: #ffffff !important;
+        font-weight: 700 !important;
     }
     .stButton > button[kind="primary"]:hover,
+    .stButton > button[data-testid="baseButton-primary"]:hover,
+    button[kind="primary"]:hover,
     button[data-testid="baseButton-primary"]:hover {
+        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+        background-color: #1d4ed8 !important;
         transform: translateY(-2px) !important;
-        box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4) !important;
+        box-shadow: 0 6px 18px rgba(29, 78, 216, 0.45) !important;
         color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+    }
+    .stButton > button[kind="primary"]:hover *,
+    .stButton > button[data-testid="baseButton-primary"]:hover *,
+    button[kind="primary"]:hover *,
+    button[data-testid="baseButton-primary"]:hover * {
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        fill: #ffffff !important;
     }
 
     /* 浮動工具列淺色 */
@@ -3476,13 +3594,13 @@ if menu in ["🧑‍💼 人機對照審核台", "📊 BI 營運成效儀表板"
     menu = "📝 提交退換貨申請"
 
 # 主畫面頂端常駐登入者狀態標籤列
-user_pill_color = "#38bdf8" if is_admin else "#10b981"
+user_pill_color = ("#0284c7" if is_admin else "#15803d") if not is_dark else ("#38bdf8" if is_admin else "#10b981")
 user_role_tag = "👑 平台管理員 (審核方)" if is_admin else "👤 一般會員"
 _banner_bg = "rgba(30, 41, 59, 0.45)" if is_dark else "#ffffff"
-_banner_border = "rgba(148, 163, 184, 0.2)" if is_dark else "#e2e8f0"
-_banner_text = "#cbd5e1" if is_dark else "#334155"
+_banner_border = "rgba(148, 163, 184, 0.2)" if is_dark else "#cbd5e1"
+_banner_text = "#cbd5e1" if is_dark else "#1e293b"
 _banner_name = "#fff" if is_dark else "#0f172a"
-_banner_sub = "#94a3b8" if is_dark else "#64748b"
+_banner_sub = "#94a3b8" if is_dark else "#475569"
 st.markdown(f"""
 <div style="background: {_banner_bg}; border: 1px solid {_banner_border}; border-radius: 8px; padding: 6px 14px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
     <div style="font-size: 13px; color: {_banner_text};">
