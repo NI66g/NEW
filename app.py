@@ -2529,6 +2529,72 @@ def send_verification_code_email(customer_email, code):
     except Exception as e:
         return False, f"⚠️ 郵件連線發送受阻（{str(e)}）。若為測試環境，本次驗證碼為【{code}】。"
 
+def send_register_verification_code_email(email, code):
+    """
+    會員建立新帳號時，發送 6 位數隨機驗證碼至註冊信箱，驗證信箱有效性
+    寄件者: zhuant610@gmail.com
+    """
+    if not email or "@" not in email:
+        return False, "⚠️ 未填寫有效之電子信箱格式。"
+
+    cfg = load_email_config()
+    sender = cfg.get("sender_email", "zhuant610@gmail.com").strip()
+    app_pwd = cfg.get("app_password", "").strip() or st.session_state.get("gmail_app_password", "").strip() or os.environ.get("GMAIL_APP_PASSWORD", "").strip()
+
+    subject = f"【電腦周邊售後客服中心】會員註冊驗證碼：{code}"
+    html_body = f"""
+    <html>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif; background-color: #f8fafc; padding: 24px; margin: 0;">
+        <div style="max-width: 560px; margin: auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;">
+            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 20px 24px; border-bottom: 3px solid #38bdf8;">
+                <h2 style="color: #ffffff; margin: 0; font-size: 18px; font-weight: 700;">🛡️ 電腦周邊智慧售後退換貨與爭議風控平台</h2>
+                <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">新會員帳號建立 · 電子信箱身分核驗</p>
+            </div>
+            
+            <div style="padding: 24px 28px;">
+                <p style="font-size: 15px; color: #1e293b; margin-top: 0;">親愛的會員您好：</p>
+                <p style="font-size: 14px; color: #475569; line-height: 1.6;">
+                    感謝您註冊「電腦周邊智慧售後退換貨與爭議風控平台」。為確認您的電子信箱真實有效，並確保後續售後申請、AI 審核結果與帳戶安全通知能順利送達，請在註冊畫面輸入以下 6 位數驗證碼：
+                </p>
+                
+                <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1.5px dashed #16a34a; border-radius: 10px; padding: 18px; text-align: center; margin: 20px 0;">
+                    <div style="font-size: 13px; color: #15803d; font-weight: 600; margin-bottom: 6px;">您的會員註冊驗證碼</div>
+                    <div style="font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #16a34a; font-family: 'Courier New', monospace;">{code}</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 6px;">(驗證碼 10 分鐘內有效，請勿洩露給他人)</div>
+                </div>
+                
+                <p style="font-size: 13px; color: #64748b; line-height: 1.6;">
+                    ※ 若非您本人操作註冊，請忽略此郵件，系統不會建立任何帳號資訊。<br>
+                    ※ 本郵件由系統自動發送，寄件信箱：<strong>{sender}</strong>。
+                </p>
+            </div>
+            
+            <div style="background-color: #f1f5f9; padding: 12px 24px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8;">
+                電腦周邊智慧退換貨與爭議風控系統 · 守護您的消費權益
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    if not app_pwd:
+        return False, f"⚠️ 目前系統尚未設定 Gmail 應用程式密碼。若為展示測試環境，本次生成之註冊驗證碼為【{code}】。"
+
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = f"電腦周邊售後客服中心 <{sender}>"
+        msg["To"] = email
+        msg.attach(MIMEText(html_body, "html", "utf-8"))
+
+        clean_pwd = app_pwd.replace(" ", "")
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
+            server.login(sender, clean_pwd)
+            server.sendmail(sender, email, msg.as_string())
+        return True, f"✅ 註冊驗證碼已成功發送至 {email}，請至信箱查收！"
+    except Exception as e:
+        return False, f"⚠️ 郵件連線發送受阻（{str(e)}）。若為測試環境，本次驗證碼為【{code}】。"
+
 # ==========================================
 # 2.1 人機協同審核決策小視窗 (Approval / Rejection / Supplement Modals)
 # ==========================================
@@ -2920,6 +2986,100 @@ def render_return_verify_dialog_content():
             st.session_state["return_verify_send_status"] = ""
             st.rerun()
 
+def render_register_verify_dialog_content():
+    """
+    註冊帳號時彈出的驗證碼核驗小視窗：
+    - 顯示發送目標信箱與帳號名稱
+    - 提供 6 位數驗證碼輸入框
+    - 【驗證並完成註冊】：核對成功後才寫入 SQLite 資料庫並自動登入
+    - 【重新發送驗證碼】：重新生成 6 位數驗證碼並再次發送至該信箱
+    - 【取消】：關閉小視窗，保留註冊表單輸入內容供修改
+    """
+    pending = st.session_state.get("pending_reg_data") or {}
+    target_email = pending.get("email", "")
+    target_uname = pending.get("username", "")
+
+    if not target_email or not target_uname:
+        st.warning("⚠️ 註冊驗證資料已失效，請關閉視窗後重新填寫表單。")
+        if st.button("❌ 關閉視窗", use_container_width=True, key="btn_close_invalid_reg_modal"):
+            st.session_state["show_register_verify_dialog"] = False
+            st.rerun()
+        return
+
+    st.markdown(f"""
+    <div style="background: rgba(34, 197, 94, 0.08); border: 1.5px solid rgba(34, 197, 94, 0.35); border-radius: 10px; padding: 12px 16px; margin-bottom: 12px;">
+        <div style="font-size: 14.5px; font-weight: 700; color: #22c55e; margin-bottom: 4px;">📩 註冊驗證碼已發送至您的信箱</div>
+        <div style="font-size: 13px; color: #cbd5e1; line-height: 1.5;">
+            即將為您建立帳號：<b style="color: #38bdf8;">{target_uname}</b><br>
+            為確保信箱真實有效，系統已生成 6 位數隨機驗證碼並發送至：<br>
+            <b style="color: #f8fafc; font-size: 14.5px;">{target_email}</b>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    send_status = st.session_state.get("reg_verify_send_status", "")
+    if send_status:
+        if "成功" in send_status:
+            st.success(send_status)
+        else:
+            st.info(send_status)
+
+    code_input = st.text_input(
+        "請輸入 6 位數註冊驗證碼：",
+        key="input_reg_verify_code_modal",
+        placeholder="請輸入 6 位數字驗證碼",
+        max_chars=6
+    )
+
+    st.markdown("<div style='margin-top: 14px;'></div>", unsafe_allow_html=True)
+
+    col_submit, col_resend, col_cancel = st.columns([1.6, 1.4, 1.0])
+
+    with col_submit:
+        if st.button("🚀 驗證並完成註冊", type="primary", use_container_width=True, key="btn_modal_reg_submit"):
+            correct_code = str(st.session_state.get("pending_reg_code", "")).strip()
+            entered_code = code_input.strip()
+
+            if not entered_code:
+                st.error("⚠️ 請輸入收到的 6 位數註冊驗證碼！")
+            elif entered_code != correct_code:
+                st.error("❌ 驗證碼錯誤，請重新確認郵件或點擊「重新發送」！")
+            else:
+                uname = pending.get("username")
+                pwd = pending.get("password")
+                em = pending.get("email")
+                ok, msg = register_user(uname, pwd, em, role="user")
+                if ok:
+                    _, uinfo, _ = authenticate_user(uname, pwd)
+                    st.session_state["current_user"] = uinfo
+                    st.session_state["admin_authenticated"] = False
+                    st.session_state["show_register_verify_dialog"] = False
+                    st.session_state["pending_reg_data"] = None
+                    st.session_state["pending_reg_code"] = None
+                    st.session_state["reg_verify_send_status"] = ""
+                    st.success("🎉 驗證通過！帳號註冊成功，正在登入系統...")
+                    st.rerun()
+                else:
+                    st.error(msg)
+
+    with col_resend:
+        if st.button("🔄 重新發送驗證碼", use_container_width=True, key="btn_modal_reg_resend"):
+            import random
+            new_code = f"{random.randint(100000, 999999)}"
+            st.session_state["pending_reg_code"] = new_code
+            with st.spinner(f"正在重新發送驗證碼至 {target_email}..."):
+                ok, msg = send_register_verification_code_email(target_email, new_code)
+                st.session_state["reg_verify_send_status"] = msg
+                st.rerun()
+
+    with col_cancel:
+        if st.button("❌ 取消", use_container_width=True, key="btn_modal_reg_cancel"):
+            st.session_state["show_register_verify_dialog"] = False
+            st.session_state["pending_reg_data"] = None
+            st.session_state["pending_reg_code"] = None
+            st.session_state["reg_verify_send_status"] = ""
+            st.rerun()
+
 if dialog_decorator:
     @dialog_decorator("✅ 核准退換：填寫處置理由與維修資訊")
     def open_approve_modal(case_id, order_id, product_name, customer_email, ai_verdict, ai_recommendation):
@@ -2936,9 +3096,16 @@ if dialog_decorator:
     @dialog_decorator("📧 請輸入電子信箱驗證碼")
     def open_return_verify_modal():
         render_return_verify_dialog_content()
+
+    @dialog_decorator("📧 請輸入註冊驗證碼")
+    def open_register_verify_modal():
+        render_register_verify_dialog_content()
 else:
     def open_return_verify_modal():
         render_return_verify_dialog_content()
+
+    def open_register_verify_modal():
+        render_register_verify_dialog_content()
 
 
 # ==========================================
@@ -3040,9 +3207,8 @@ if "current_user" not in st.session_state:
 
 current_user = st.session_state.get("current_user")
 
-# 未登入狀態：主畫面直接提供風格與登入門戶 (已完全移除側邊欄)
+# 未登入狀態：直接呈現精緻的登入與註冊整合門戶
 if current_user is None:
-
     # 主畫面呈現：精緻的登入與註冊整合門戶
     st.markdown("""
     <div class="tech-hero">
@@ -3127,21 +3293,56 @@ if current_user is None:
             reg_pwd = st.text_input("設定密碼 (至少4個字元)", type="password", key="input_reg_pwd")
             reg_pwd_confirm = st.text_input("確認密碼", type="password", key="input_reg_pwd_confirm")
 
-        st.caption("※ 註冊完成即獲得買家帳號資格，可立即提交周邊退換貨申請、上傳照片進行 AI 檢驗與查詢進度。")
+        st.caption("※ 為維護帳號真實性與通知送達，點擊建立帳號後系統將發送 6 位數驗證碼至您的信箱，輸入驗證碼即可完成註冊並登入。")
 
         if st.button("✨ 立即建立會員帳號並登入", type="primary", use_container_width=True, key="btn_do_register"):
-            if reg_pwd != reg_pwd_confirm:
+            username_clean = reg_username.strip()
+            email_clean = reg_email.strip()
+            if not username_clean:
+                st.error("❌ 請輸入使用者帳號！")
+            elif len(username_clean) < 3:
+                st.error("❌ 帳號長度至少需 3 個字元！")
+            elif not email_clean or "@" not in email_clean:
+                st.error("❌ 請輸入有效的電子郵件信箱！")
+            elif not reg_pwd or len(reg_pwd) < 4:
+                st.error("❌ 密碼長度至少需 4 個字元！")
+            elif reg_pwd != reg_pwd_confirm:
                 st.error("❌ 兩次輸入的密碼不一致，請再次確認！")
             else:
-                ok, msg = register_user(reg_username, reg_pwd, reg_email, role="user")
-                if ok:
-                    _, uinfo, _ = authenticate_user(reg_username, reg_pwd)
-                    st.session_state["current_user"] = uinfo
-                    st.session_state["admin_authenticated"] = False
-                    st.success(msg)
-                    st.rerun()
+                # 預先檢查帳號與信箱是否已被註冊
+                conn = sqlite3.connect(DB_FILE)
+                c = conn.cursor()
+                c.execute("SELECT id FROM users WHERE username = ?", (username_clean,))
+                u_row = c.fetchone()
+                c.execute("SELECT id FROM users WHERE LOWER(email) = LOWER(?)", (email_clean,))
+                e_row = c.fetchone()
+                conn.close()
+
+                if u_row:
+                    st.error(f"❌ 帳號「{username_clean}」已被註冊，請更換其他帳號名稱！")
+                elif e_row:
+                    st.error("❌ 此電子信箱已被註冊使用！")
                 else:
-                    st.error(msg)
+                    import random
+                    reg_code = f"{random.randint(100000, 999999)}"
+                    st.session_state["pending_reg_code"] = reg_code
+                    st.session_state["pending_reg_data"] = {
+                        "username": username_clean,
+                        "email": email_clean,
+                        "password": reg_pwd
+                    }
+                    with st.spinner(f"正在生成 6 位數註冊驗證碼並發送至 {email_clean}..."):
+                        ok, msg = send_register_verification_code_email(email_clean, reg_code)
+                        st.session_state["reg_verify_send_status"] = msg
+                    st.session_state["show_register_verify_dialog"] = True
+                    st.rerun()
+
+    # 檢查是否需要彈出註冊驗證碼小視窗
+    if st.session_state.get("show_register_verify_dialog"):
+        if dialog_decorator:
+            open_register_verify_modal()
+        else:
+            render_register_verify_dialog_content()
 
     st.stop()
 
