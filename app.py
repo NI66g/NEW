@@ -4303,6 +4303,7 @@ elif menu in ["⚙️ 系統設定 & 外觀風格", "⚙️ 系統設定 & API"]
     st.markdown("### 🌐 系統後端伺服器連線設定 (Backend Connection)")
     st.caption("管理目前 Vercel 雲端入口門戶與 Streamlit AI 運算容器之連線端點網址：")
 
+    admin_cfg = load_admin_config()
     cur_backend = admin_cfg.get("backend_url", "https://c79p6iaujeyjubfmyygaqj.streamlit.app") if is_admin else "https://c79p6iaujeyjubfmyygaqj.streamlit.app"
 
     col_b1, col_b2 = st.columns([3, 1])
