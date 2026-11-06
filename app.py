@@ -3047,86 +3047,95 @@ if "show_login_page" not in st.session_state:
 # 未登入狀態：依據狀態顯示「全新形象首頁」或「原本的登入首頁」
 if current_user is None:
 
-    # 1. 全新形象首頁：放上有貓咪的圖，右上角有登入按鈕
+    # 1. 全新形象首頁：讓貓咪圖片100%占滿整個 Chrome 視窗，右上角設置登入按鈕
     if not st.session_state.get("show_login_page", False):
-        # 頂部列：左側標題與簡介，右上角登入按鈕
-        col_header_title, col_header_theme, col_header_login = st.columns([5.2, 1.4, 1.2])
-        with col_header_title:
-            st.markdown(f"""
-            <div style="display: flex; align-items: center; gap: 10px; padding: 4px 0;">
-                <span style="font-size: 26px;">🛡️</span>
-                <div>
-                    <div style="font-size: 18px; font-weight: 800; color: {'#f8fafc' if is_dark else '#0f172a'}; letter-spacing: 0.5px;">
-                        電腦周邊智慧售後退換貨與爭議風控平台
-                    </div>
-                    <div style="font-size: 12.5px; color: {'#94a3b8' if is_dark else '#64748b'};">
-                        基於 Google Gemini 3.8 Flash 多模態 AI · 3C 周邊退貨審核系統
-                    </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-        with col_header_theme:
-            home_theme_choice = st.radio(
-                "色彩模式",
-                ["🌙 深色", "☀️ 淺色"],
-                index=0 if is_dark else 1,
-                horizontal=True,
-                key="home_screen_theme_radio",
-                label_visibility="collapsed"
-            )
-            if home_theme_choice != st.session_state.get("app_theme_choice"):
-                st.session_state["app_theme_choice"] = home_theme_choice
-                st.rerun()
-
-        with col_header_login:
-            # 依使用者需求：右上角有一個登入按鈕，點擊後才會進入原本的登入首頁
-            if st.button("🔑 登入", key="btn_landing_top_login", type="primary", use_container_width=True):
-                st.session_state["show_login_page"] = True
-                st.rerun()
-
-        st.markdown("<hr style='margin: 8px 0 18px 0; border: none; border-top: 1px solid rgba(148, 163, 184, 0.2);'>", unsafe_allow_html=True)
-
-        # 中心形象區塊：放上有貓咪的這張圖 (3C退貨一件審核 + 可愛貓咪 HELLO)
         cat_img_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cat_landing.jpg")
         if not os.path.exists(cat_img_path):
             cat_img_path = r"C:\Users\User\Downloads\10777\cat_landing.jpg"
 
-        col_img_left, col_img_center, col_img_right = st.columns([0.02, 0.96, 0.02])
-        with col_img_center:
-            if os.path.exists(cat_img_path):
-                st.image(cat_img_path, use_container_width=True)
-            else:
-                st.info("🐱 歡迎造訪 3C 電腦周邊智慧售後退換貨與爭議風控平台！")
-
-        # 形象首頁下方核心功能卡片
-        card_bg = "rgba(30, 41, 59, 0.55)" if is_dark else "#ffffff"
-        card_border = "rgba(56, 189, 248, 0.25)" if is_dark else "#e2e8f0"
-        card_title = "#38bdf8" if is_dark else "#0284c7"
-        card_desc = "#cbd5e1" if is_dark else "#475569"
+        b64_cat = ""
+        if os.path.exists(cat_img_path):
+            with open(cat_img_path, "rb") as f:
+                b64_cat = base64.b64encode(f.read()).decode("ascii")
 
         st.markdown(f"""
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin: 20px 0 28px 0;">
-            <div style="background: {card_bg}; border: 1.5px solid {card_border}; border-radius: 12px; padding: 18px 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.06);">
-                <div style="font-size: 16px; font-weight: 700; color: {card_title}; margin-bottom: 6px;">⚡ 3C退貨一鍵快審</div>
-                <div style="font-size: 13px; color: {card_desc}; line-height: 1.6;">專為機械/薄膜鍵盤、電競滑鼠、耳麥量身打造，出廠新品不良（DOA）線上即時受理，支援多張瑕疵佐證照片一併上傳審查。</div>
-            </div>
-            <div style="background: {card_bg}; border: 1.5px solid {card_border}; border-radius: 12px; padding: 18px 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.06);">
-                <div style="font-size: 16px; font-weight: 700; color: {card_title}; margin-bottom: 6px;">🤖 Gemini 3.8 Flash 視覺風控</div>
-                <div style="font-size: 13px; color: {card_desc}; line-height: 1.6;">整合 Google 旗艦多模態視覺模型，秒級分析微動連點雙擊、軸體斷路、外殼摔裂凹陷與飲料進水氧化受潮等關鍵特徵。</div>
-            </div>
-            <div style="background: {card_bg}; border: 1.5px solid {card_border}; border-radius: 12px; padding: 18px 20px; box-shadow: 0 4px 14px rgba(0,0,0,0.06);">
-                <div style="font-size: 16px; font-weight: 700; color: {card_title}; margin-bottom: 6px;">📧 信箱驗證與透明進度</div>
-                <div style="font-size: 13px; color: {card_desc}; line-height: 1.6;">提交退貨申請享有 6 位數隨機驗證碼核驗保障，核准退換、原廠維修排程或補件通知即刻寄達信箱，案件處理全程透明。</div>
-            </div>
+        <style>
+        /* 隱藏原生多餘邊距與捲軸，確保貓咪圖片100%占滿整個 Chrome 視窗，零背景色露出 */
+        html, body, [data-testid="stAppViewContainer"], .main, section.main, .block-container {{
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            overflow: hidden !important;
+        }}
+        
+        /* 貓咪圖片全螢幕滿版鋪滿 (Full Viewport Cover) */
+        .cat-fullscreen-cover {{
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 100 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            background-color: #0b1120 !important;
+        }}
+        .cat-fullscreen-cover img {{
+            width: 100vw !important;
+            height: 100vh !important;
+            object-fit: cover !important;
+            object-position: center center !important;
+            display: block !important;
+            border: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }}
+
+        /* 右上角固定懸浮「登入」按鈕 */
+        .st-key-btn_landing_top_login {{
+            position: fixed !important;
+            top: 24px !important;
+            right: 28px !important;
+            z-index: 999999 !important;
+            width: auto !important;
+        }}
+        .st-key-btn_landing_top_login button {{
+            border-radius: 28px !important;
+            padding: 10px 32px !important;
+            font-size: 16px !important;
+            font-weight: 700 !important;
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%) !important;
+            color: #ffffff !important;
+            border: 2px solid rgba(255, 255, 255, 0.75) !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 18px rgba(59, 130, 246, 0.7) !important;
+            cursor: pointer !important;
+            letter-spacing: 2px !important;
+            transition: all 0.25s ease !important;
+        }}
+        .st-key-btn_landing_top_login button:hover {{
+            transform: translateY(-2px) scale(1.05) !important;
+            background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%) !important;
+            border-color: #ffffff !important;
+            box-shadow: 0 6px 28px rgba(0, 0, 0, 0.75), 0 0 25px rgba(96, 165, 250, 0.95) !important;
+            color: #ffffff !important;
+        }}
+        </style>
+        
+        <div class="cat-fullscreen-cover">
+            <img src="data:image/jpeg;base64,{b64_cat}" alt="3C退貨一件審核 首頁形象" />
         </div>
         """, unsafe_allow_html=True)
 
-        col_b1, col_b2, col_b3 = st.columns([1.2, 1.6, 1.2])
-        with col_b2:
-            if st.button("🚀 進入登入系統 (開始體驗)", key="btn_landing_bottom_login", type="primary", use_container_width=True):
-                st.session_state["show_login_page"] = True
-                st.rerun()
+        # 右上角登入按鈕 (由 CSS 定位在畫面右上角，點擊進入原本的登入首頁)
+        if st.button("登入", key="btn_landing_top_login", type="primary"):
+            st.session_state["show_login_page"] = True
+            st.rerun()
 
         st.stop()
 
