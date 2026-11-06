@@ -3215,7 +3215,7 @@ if current_user is None:
     <div class="tech-hero">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
             <div>
-                <div class="hero-title">🛡️ 電腦周邊智慧售後退換貨與爭議風控平台</div>
+                <div class="hero-title">🛡️ 電腦周邊售後保固退換貨平台</div>
                 <div class="hero-subtitle">
                     基於 Google Gemini 3.8 Flash 多模態 AI · 鍵盤／滑鼠／耳機人機協同審核決策系統
                 </div>
