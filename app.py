@@ -2189,8 +2189,8 @@ def load_admin_config():
             return default_cfg
     return default_cfg
 
-def save_admin_config(admin_password=None, gemini_api_key=None, gemini_model_name=None):
-    """將管理員密碼、API Key 或模型名稱設定儲存至本地 admin_config.json"""
+def save_admin_config(admin_password=None, gemini_api_key=None, gemini_model_name=None, backend_url=None, **kwargs):
+    """將管理員密碼、API Key、模型名稱或後端連線網址等設定儲存至本地 admin_config.json"""
     cfg = load_admin_config()
     if admin_password is not None:
         cfg["admin_password"] = (admin_password or "admin888").strip()
@@ -2198,6 +2198,11 @@ def save_admin_config(admin_password=None, gemini_api_key=None, gemini_model_nam
         cfg["gemini_api_key"] = gemini_api_key.strip()
     if gemini_model_name is not None:
         cfg["gemini_model_name"] = gemini_model_name.strip()
+    if backend_url is not None:
+        cfg["backend_url"] = backend_url.strip().rstrip('/')
+    for k, v in kwargs.items():
+        if v is not None:
+            cfg[k] = v
     try:
         with open(ADMIN_CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(cfg, f, ensure_ascii=False, indent=2)
@@ -3601,10 +3606,12 @@ _banner_border = "rgba(148, 163, 184, 0.2)" if is_dark else "#cbd5e1"
 _banner_text = "#cbd5e1" if is_dark else "#1e293b"
 _banner_name = "#fff" if is_dark else "#0f172a"
 _banner_sub = "#94a3b8" if is_dark else "#475569"
+curr_uname = current_user.get("username", "") if isinstance(current_user, dict) else ""
+curr_email = current_user.get("email", "") if isinstance(current_user, dict) else ""
 st.markdown(f"""
 <div style="background: {_banner_bg}; border: 1px solid {_banner_border}; border-radius: 8px; padding: 6px 14px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
     <div style="font-size: 13px; color: {_banner_text};">
-        当前登入者：<b style="color: {_banner_name};">{current_user['username']}</b> ｜ 權限：<span style="color: {user_pill_color}; font-weight: 600;">{user_role_tag}</span> ｜ 信箱：<code>{current_user['email']}</code>
+        当前登入者：<b style="color: {_banner_name};">{curr_uname}</b> ｜ 權限：<span style="color: {user_pill_color}; font-weight: 600;">{user_role_tag}</span> ｜ 信箱：<code>{curr_email}</code>
     </div>
     <div style="font-size: 12px; color: {_banner_sub};">
         ✅ 身分驗證已通過
@@ -4529,12 +4536,15 @@ elif menu in ["⚙️ 系統設定 & 外觀風格", "⚙️ 系統設定 & API"]
     # 區塊 2: 👤 當前登入者帳號資料
     st.markdown("### 👤 當前登入者帳號資料")
     c_u1, c_u2 = st.columns([1, 1])
+    u_name = current_user.get('username', '') if isinstance(current_user, dict) else ''
+    u_email = current_user.get('email', '未填寫') if isinstance(current_user, dict) else '未填寫'
+    u_created = current_user.get('created_at', '系統預設') if isinstance(current_user, dict) else '系統預設'
     with c_u1:
-        st.markdown(f"**使用者名稱**：`{current_user['username']}`")
+        st.markdown(f"**使用者名稱**：`{u_name}`")
         st.markdown(f"**角色身分**：`{'👑 平台管理員 (審核方)' if is_admin else '👤 一般會員'}`")
     with c_u2:
-        st.markdown(f"**綁定電子信箱**：`{current_user.get('email', '未填寫')}`")
-        st.markdown(f"**註冊時間**：`{current_user.get('created_at', '系統預設')}`")
+        st.markdown(f"**綁定電子信箱**：`{u_email}`")
+        st.markdown(f"**註冊時間**：`{u_created}`")
 
     # 區塊 3: 依身分分流
     if is_admin:
