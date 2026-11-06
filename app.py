@@ -2215,6 +2215,149 @@ def save_admin_config(admin_password=None, gemini_api_key=None, gemini_model_nam
 # 0.3 會員與角色權限認證系統 (SQLite users)
 # ==========================================
 import hashlib
+import hmac
+
+AUTH_SECRET = "warranty-copilot-auth-v1-2026"
+
+def safe_log(msg: str):
+    """安全日誌輸出，防止 Windows CP950 編碼終端遇到 Emoji 崩潰"""
+    try:
+        print(msg)
+    except Exception:
+        try:
+            print(msg.encode("ascii", "replace").decode("ascii"))
+        except Exception:
+            pass
+
+def make_auth_token(username: str) -> str:
+    """產生安全身分驗證 Token，供網址參數與重新整理時持久化登入狀態"""
+    h = hmac.new(AUTH_SECRET.encode("utf-8"), username.encode("utf-8"), hashlib.sha256).hexdigest()[:16]
+    return f"{username}.{h}"
+
+def verify_auth_token(token: str):
+    """驗證 Token 並自資料庫讀取使用者資料"""
+    if not token or "." not in token:
+        return None
+    try:
+        uname, sig = token.split(".", 1)
+        expected = hmac.new(AUTH_SECRET.encode("utf-8"), uname.encode("utf-8"), hashlib.sha256).hexdigest()[:16]
+        if hmac.compare_digest(sig, expected):
+            conn = sqlite3.connect(DB_FILE)
+            c = conn.cursor()
+            c.execute("SELECT id, username, password_hash, email, role, created_at FROM users WHERE username = ?", (uname,))
+            row = c.fetchone()
+            conn.close()
+            if row:
+                return {
+                    "id": row[0],
+                    "username": row[1],
+                    "email": row[3],
+                    "role": row[4],
+                    "created_at": row[5]
+                }
+    except Exception:
+        pass
+    return None
+
+PAGE_MAP = {
+    # 買家端 / 一般頁面
+    "submit": "📝 提交退換貨申請",
+    "track": "🔍 查詢進度 / 補充照片",
+    "settings": "⚙️ 系統設定 & 外觀風格",
+    # 管理端專屬頁面
+    "audit": "🧑‍💼 人機對照審核台",
+    "bi": "📊 BI 營運成效儀表板",
+    "accounts": "👥 帳號清單與權限管理",
+    "settings_api": "⚙️ 系統設定 & API",
+}
+
+PAGE_ALIASES = {
+    "apply": "submit",
+    "return": "submit",
+    "form": "submit",
+    "query": "track",
+    "status": "track",
+    "progress": "track",
+    "review": "audit",
+    "manager": "audit",
+    "hitl": "audit",
+    "dashboard": "bi",
+    "analytics": "bi",
+    "users": "accounts",
+    "user": "accounts",
+    "config": "settings",
+    "api": "settings_api",
+}
+
+MENU_TO_PAGE = {v: k for k, v in PAGE_MAP.items()}
+
+def resolve_current_page(is_admin_user: bool) -> tuple[str, str, str]:
+    """
+    自 st.query_params 優先解析當前頁面與步驟，並進行權限過濾。
+    回傳 (menu_label, page_slug, current_step)
+    """
+    raw_page = str(st.query_params.get("page", "")).strip().lower()
+    raw_step = str(st.query_params.get("step", "")).strip()
+
+    # 別名解析
+    page_slug = PAGE_ALIASES.get(raw_page, raw_page)
+    
+    # 若在 PAGE_MAP 中找不到，檢查是否直接傳入中文 menu_id
+    if page_slug not in PAGE_MAP:
+        for p_slug, m_id in PAGE_MAP.items():
+            if m_id == raw_page:
+                page_slug = p_slug
+                break
+
+    # 權限防護：非管理員嘗試進入管理端頁面時自動導向一般頁面
+    admin_only_slugs = ["audit", "bi", "accounts", "settings_api"]
+    if page_slug in admin_only_slugs and not is_admin_user:
+        page_slug = "submit"
+
+    # 若仍非合法 slug，指定角色預設頁
+    if page_slug not in PAGE_MAP:
+        page_slug = "audit" if is_admin_user else "submit"
+
+    if not raw_step:
+        raw_step = "main"
+
+    menu_label = PAGE_MAP[page_slug]
+    return menu_label, page_slug, raw_step
+
+def navigate_to(page_slug: str, step: str = "main", preserve_params: bool = False, **extra_params):
+    """
+    統一頁面與步驟導航路由函式：
+    - 同步更新 st.query_params (讓瀏覽器產生歷史紀錄，支援上一頁/下一頁與 F5)
+    - 依據目標頁面更新，自動保留 auth 憑證，並更新/清理跨頁參數
+    - 同步更新 st.session_state['active_nav_menu']
+    - 觸發 st.rerun()
+    """
+    page_slug = PAGE_ALIASES.get(page_slug, page_slug)
+    menu_label = PAGE_MAP.get(page_slug, page_slug)
+    st.session_state["active_nav_menu"] = menu_label
+
+    auth_tok = extra_params.pop("auth", None) or st.query_params.get("auth")
+    if not auth_tok and st.session_state.get("current_user"):
+        auth_tok = make_auth_token(st.session_state["current_user"].get("username", ""))
+
+    # 若跨頁切換 (且未指定保留)，先清除舊頁面的特定臨時參數 (如 q, case_id, order)
+    current_page = st.query_params.get("page")
+    if current_page and current_page != page_slug and not preserve_params:
+        for temp_key in ["q", "case_id", "order"]:
+            if temp_key in st.query_params and temp_key not in extra_params:
+                del st.query_params[temp_key]
+
+    if auth_tok:
+        st.query_params["auth"] = auth_tok
+    st.query_params["page"] = page_slug
+    st.query_params["step"] = step
+
+    for k, v in extra_params.items():
+        if v is not None:
+            st.query_params[k] = str(v)
+        elif k in st.query_params:
+            del st.query_params[k]
+    st.rerun()
 
 def hash_password(password: str) -> str:
     """密碼 SHA-256 安全雜湊運算"""
@@ -3063,7 +3206,7 @@ def render_return_verify_dialog_content():
         st.warning("⚠️ 驗證資料已失效，請返回表單重新送出申請。")
         if st.button("❌ 關閉視窗", use_container_width=True):
             st.session_state["show_return_verify_dialog"] = False
-            st.rerun()
+            navigate_to("submit", step="form")
         return
 
     st.markdown(f"""
@@ -3147,7 +3290,7 @@ def render_return_verify_dialog_content():
                         st.session_state["app_return_product_name"] = ""
                         st.session_state["app_return_reason"] = ""
                         
-                        st.rerun()
+                        navigate_to("submit", step="success", order=order_id)
                     except Exception as e:
                         st.error(f"❌ 申訴資料寫入資料庫失敗：{str(e)}。請聯繫管理員確認後台連線。")
 
@@ -3168,7 +3311,7 @@ def render_return_verify_dialog_content():
             st.session_state["return_verify_code"] = None
             st.session_state["return_verify_data"] = None
             st.session_state["return_verify_send_status"] = ""
-            st.rerun()
+            navigate_to("submit", step="form")
 
 def render_register_verify_dialog_content():
     """
@@ -3242,7 +3385,8 @@ def render_register_verify_dialog_content():
                     st.session_state["pending_reg_code"] = None
                     st.session_state["reg_verify_send_status"] = ""
                     st.success("🎉 驗證通過！帳號註冊成功，正在登入系統...")
-                    st.rerun()
+                    auth_tok = make_auth_token(uname)
+                    navigate_to("submit", step="main", auth=auth_tok)
                 else:
                     st.error(msg)
 
@@ -3361,7 +3505,7 @@ def render_backend_config_dialog_content():
                 st.session_state[test_res_key] = None
                 st.session_state["show_backend_config_dialog"] = False
                 st.success(f"✅ 後端網址已儲存並同步！新端點：`{clean_url}`")
-                st.rerun()
+                navigate_to("settings", step="main")
             else:
                 st.error("請輸入有效的後端網址！")
 
@@ -3369,7 +3513,7 @@ def render_backend_config_dialog_content():
         if st.button("❌ 關閉", use_container_width=True, key="dlg_btn_close_conn"):
             st.session_state[test_res_key] = None
             st.session_state["show_backend_config_dialog"] = False
-            st.rerun()
+            navigate_to("settings", step="main")
 
 if dialog_decorator:
     @dialog_decorator("✅ 核准退換：填寫處置理由與維修資訊")
@@ -3503,6 +3647,18 @@ def analyze_return_request(category, product_name, reason, image_file, api_key="
 if "current_user" not in st.session_state:
     st.session_state["current_user"] = None
 
+# 優先自 st.query_params['auth'] 還原登入狀態 (確保 Chrome 按 F5 重新整理時不跳回登入頁)
+if st.session_state.get("current_user") is None:
+    auth_param = st.query_params.get("auth")
+    if auth_param:
+        recovered = verify_auth_token(auth_param)
+        if recovered:
+            st.session_state["current_user"] = recovered
+            st.session_state["admin_authenticated"] = (recovered.get("role") == "admin")
+        else:
+            if "auth" in st.query_params:
+                del st.query_params["auth"]
+
 current_user = st.session_state.get("current_user")
 
 # 未登入狀態：直接呈現精緻的登入與註冊整合門戶
@@ -3556,8 +3712,11 @@ if current_user is None:
             if ok:
                 st.session_state["current_user"] = uinfo
                 st.session_state["admin_authenticated"] = (uinfo["role"] == "admin")
-                st.success(f"{msg} 歡迎回來，【{uinfo['username']}】！")
-                st.rerun()
+                auth_tok = make_auth_token(uinfo["username"])
+                req_page = st.query_params.get("page")
+                target_page = req_page if (req_page in PAGE_MAP and (uinfo["role"] == "admin" or req_page not in ["audit", "bi", "accounts", "settings_api"])) else ("audit" if uinfo["role"] == "admin" else "submit")
+                target_step = st.query_params.get("step") or "main"
+                navigate_to(target_page, step=target_step, auth=auth_tok)
             else:
                 st.error(msg)
 
@@ -3572,14 +3731,16 @@ if current_user is None:
                 if ok:
                     st.session_state["current_user"] = uinfo
                     st.session_state["admin_authenticated"] = True
-                    st.rerun()
+                    auth_tok = make_auth_token(uinfo["username"])
+                    navigate_to("audit", step="main", auth=auth_tok)
         with qc2:
             if st.button("👤 快速以【一般使用者】身分登入 (buyer01 / buyer123)", use_container_width=True):
                 ok, uinfo, msg = authenticate_user("buyer01", "buyer123")
                 if ok:
                     st.session_state["current_user"] = uinfo
                     st.session_state["admin_authenticated"] = False
-                    st.rerun()
+                    auth_tok = make_auth_token(uinfo["username"])
+                    navigate_to("submit", step="main", auth=auth_tok)
 
     with auth_tab_register:
         st.markdown("#### 📝 填寫資料建立新會員帳號：")
@@ -3668,9 +3829,17 @@ else:
     # 所有合法導航目標 (包含點擊左上角齒輪按鈕進入的獨立設定畫面區)
     valid_nav_ids = [item["id"] for item in top_nav_items] + ["⚙️ 系統設定 & 外觀風格", "⚙️ 系統設定 & API"]
 
-# 初始化當前選取頁面狀態
-if "active_nav_menu" not in st.session_state or st.session_state["active_nav_menu"] not in valid_nav_ids:
-    st.session_state["active_nav_menu"] = valid_nav_ids[0]
+# ==========================================
+# 透過 st.query_params 解析當前頁面與步驟 (支援 F5 重新整理與瀏覽器 上一頁/下一頁)
+# ==========================================
+menu_label, current_page_slug, current_step = resolve_current_page(is_admin)
+st.session_state["active_nav_menu"] = menu_label
+
+# 保持網址 query_params 同步
+if st.query_params.get("page") != current_page_slug:
+    st.query_params["page"] = current_page_slug
+if not st.query_params.get("step"):
+    st.query_params["step"] = current_step
 
 # ==========================================
 # 畫面上方固定黏濁置頂導航列 (無論上下滑動均固定在畫面最上方)：
@@ -3685,32 +3854,28 @@ with st.container(key="top_navigation_bar"):
 
     # 1. 畫面左上角：齒輪圖案獨立按鈕 (點擊後直接進入獨立設定畫面區，非下拉選單)
     with top_cols[0]:
-        is_gear_active = (st.session_state["active_nav_menu"] in ["⚙️ 系統設定 & 外觀風格", "⚙️ 系統設定 & API"])
+        is_gear_active = (current_page_slug in ["settings", "settings_api"])
         if st.button("⚙️", key="btn_top_gear_nav", type="primary" if is_gear_active else "secondary", help="進入系統設定與外觀風格", use_container_width=True):
-            st.session_state["active_nav_menu"] = "⚙️ 系統設定 & 外觀風格"
-            st.rerun()
+            navigate_to("settings", step="main")
 
     # 2. 畫面上方：一排功能選單按鈕
     for idx, item in enumerate(top_nav_items):
         with top_cols[idx + 1]:
-            is_active = (st.session_state["active_nav_menu"] == item["id"])
+            item_slug = MENU_TO_PAGE.get(item["id"], "submit")
+            is_active = (current_page_slug == item_slug)
             btn_type = "primary" if is_active else "secondary"
             if st.button(item["id"], key=f"top_nav_btn_{idx}", type=btn_type, use_container_width=True):
-                st.session_state["active_nav_menu"] = item["id"]
-                st.rerun()
+                navigate_to(item_slug, step="main")
 
     # 3. 畫面最右側：登出按鈕 (按鈕僅「登出」兩個字)
     with top_cols[-1]:
         if st.button("登出", key="btn_top_logout", type="secondary", use_container_width=True):
             st.session_state["current_user"] = None
             st.session_state["admin_authenticated"] = False
+            st.query_params.clear()
             st.rerun()
 
-menu = st.session_state["active_nav_menu"]
-# 安全防護：非管理員嘗試存取管理後台頁面時自動導向
-if menu in ["🧑‍💼 人機對照審核台", "📊 BI 營運成效儀表板", "👥 帳號清單與權限管理", "⚙️ 系統設定 & API"] and not is_admin:
-    st.warning("⚠️ 該頁面僅限管理方存取，已自動導向買家服務門戶。")
-    menu = "📝 提交退換貨申請"
+menu = menu_label
 
 # 主畫面頂端常駐登入者狀態標籤列
 user_pill_color = ("#0284c7" if is_admin else "#15803d") if not is_dark else ("#38bdf8" if is_admin else "#10b981")
@@ -3907,7 +4072,11 @@ if menu == "📝 提交退換貨申請":
                 ok, msg = send_verification_code_email(customer_email.strip(), verify_code)
                 st.session_state["return_verify_send_status"] = msg
             st.session_state["show_return_verify_dialog"] = True
-            st.rerun()
+            navigate_to("submit", step="verify")
+
+    # 若網址參數為 verify 且存在待驗證資料，自動啟動驗證對話框 (支援上一頁與重新整理)
+    if current_step == "verify" and st.session_state.get("return_verify_data"):
+        st.session_state["show_return_verify_dialog"] = True
 
     # 檢查是否需要彈出退換貨信箱驗證碼小視窗
     if st.session_state.get("show_return_verify_dialog"):
@@ -3916,14 +4085,21 @@ if menu == "📝 提交退換貨申請":
         else:
             render_return_verify_dialog_content()
 
-    # 若驗證通過並正式提交成功，顯示慶祝特效與案件資訊
-    if st.session_state.get("return_submitted_success_order"):
-        succ_order = st.session_state.pop("return_submitted_success_order")
-        succ_email = st.session_state.pop("return_submitted_success_email", "")
-        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 📦 完成信箱驗證並成功提交案件：{succ_order} -> 資料庫: {DB_FILE}")
+    # 若驗證通過並正式提交成功，顯示慶祝特效與案件資訊 (支援網址參數 order 與 F5 重新整理保留)
+    succ_order = st.query_params.get("order") or st.session_state.pop("return_submitted_success_order", None)
+    succ_email = st.session_state.pop("return_submitted_success_email", "")
+    if current_step == "success" and succ_order:
+        safe_log(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 📦 完成信箱驗證並成功提交案件：{succ_order} -> 資料庫: {DB_FILE}")
         st.success(f"🎉 驗證成功！退換貨申請已正式提交！您的案件編號為 **`{succ_order}`**。")
         if succ_email:
             st.info(f"📧 審核結果將寄發至您的電子信箱：**`{succ_email}`**。您亦可隨時在「🔍 查詢進度 / 補充照片」輸入訂單編號追蹤審核狀態。")
+        col_s_act1, col_s_act2 = st.columns([1, 1])
+        with col_s_act1:
+            if st.button("🔍 前往查詢此案件進度", type="primary", use_container_width=True, key="btn_goto_track_succ"):
+                navigate_to("track", step="result", q=succ_order)
+        with col_s_act2:
+            if st.button("📝 再填寫一筆退貨申請", use_container_width=True, key="btn_new_submit_succ"):
+                navigate_to("submit", step="form")
         st.balloons()
 
 # ==========================================
@@ -3941,16 +4117,27 @@ elif menu == "🔍 查詢進度 / 補充照片":
     </div>
     """, unsafe_allow_html=True)
 
-    query_input = st.text_input("輸入訂單編號 (例如: ORD-PERI-xxxx) 或 電子信箱", placeholder="請輸入完整訂單編號或送出申請時填寫的 Email")
+    default_q = st.query_params.get("q") or st.query_params.get("order") or ""
+    query_input = st.text_input("輸入訂單編號 (例如: ORD-PERI-xxxx) 或 電子信箱", value=default_q, key="buyer_track_query_input_text", placeholder="請輸入完整訂單編號或送出申請時填寫的 Email")
 
-    if query_input:
+    clean_q = query_input.strip()
+    if clean_q:
+        if st.query_params.get("q") != clean_q or st.query_params.get("step") != "result":
+            st.query_params["step"] = "result"
+            st.query_params["q"] = clean_q
+    else:
+        if "q" in st.query_params:
+            del st.query_params["q"]
+            st.query_params["step"] = "search"
+
+    if clean_q:
         conn = sqlite3.connect(DB_FILE)
         query_sql = """
             SELECT * FROM return_requests 
             WHERE order_id = ? OR customer_email = ? 
             ORDER BY id DESC
         """
-        df_query = pd.read_sql_query(query_sql, conn, params=(query_input.strip(), query_input.strip()))
+        df_query = pd.read_sql_query(query_sql, conn, params=(clean_q, clean_q))
         conn.close()
 
         if df_query.empty:
@@ -4165,7 +4352,7 @@ elif menu == "🧑‍💼 人機對照審核台":
     conn = sqlite3.connect(DB_FILE)
     df = pd.read_sql_query("SELECT * FROM return_requests ORDER BY id DESC", conn)
     conn.close()
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 🧑‍💼 審核後台讀取資料庫：目前共 {len(df)} 筆案件 (待審核: {len(df[df['status'] == '待審核'])} 件) -> 來源: {DB_FILE}")
+    safe_log(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 🧑‍💼 審核後台讀取資料庫：目前共 {len(df)} 筆案件 (待審核: {len(df[df['status'] == '待審核'])} 件) -> 來源: {DB_FILE}")
 
     # 頂部狀態指標卡片
     c1, c2, c3, c4 = st.columns(4)
@@ -4182,11 +4369,28 @@ elif menu == "🧑‍💼 人機對照審核台":
     st.markdown("---")
 
     # 雙維度篩選器 (處理狀態 + 周邊類別) + 即時刷新按鈕
+    status_options = ["全部", "待審核", "已通過", "已駁回", "需補件"]
+    cat_options = ["全部周邊"] + PERIPHERAL_CATEGORIES
+
+    saved_status = st.query_params.get("status")
+    status_idx = status_options.index(saved_status) if saved_status in status_options else 1
+
+    saved_cat = st.query_params.get("cat")
+    cat_idx = cat_options.index(saved_cat) if saved_cat in cat_options else 0
+
     filter_col1, filter_col2, filter_col3 = st.columns([2, 2, 1])
     with filter_col1:
-        filter_status = st.selectbox("📌 篩選處理狀態", ["全部", "待審核", "已通過", "已駁回", "需補件"], index=1)
+        filter_status = st.selectbox("📌 篩選處理狀態", status_options, index=status_idx, key="audit_filter_status_sel")
+        if filter_status != "全部":
+            st.query_params["status"] = filter_status
+        elif "status" in st.query_params:
+            del st.query_params["status"]
     with filter_col2:
-        filter_cat = st.selectbox("🎯 篩選周邊品類", ["全部周邊"] + PERIPHERAL_CATEGORIES, index=0)
+        filter_cat = st.selectbox("🎯 篩選周邊品類", cat_options, index=cat_idx, key="audit_filter_cat_sel")
+        if filter_cat != "全部周邊":
+            st.query_params["cat"] = filter_cat
+        elif "cat" in st.query_params:
+            del st.query_params["cat"]
     with filter_col3:
         st.markdown("<div style='margin-top:28px;'></div>", unsafe_allow_html=True)
         if st.button("🔄 刷新最新案件", use_container_width=True, help="點擊即時重新讀取資料庫，載入最新提交的申請"):
@@ -4649,11 +4853,16 @@ elif menu in ["⚙️ 系統設定 & 外觀風格", "⚙️ 系統設定 & API"]
             notifyOuter({type: 'open_backend_config'});
             </script>
             """, height=0)
-            st.rerun()
+            navigate_to("settings", step="backend_modal")
     with c_pop2:
         st.caption("💡 點擊可呼叫獨立連線設定視窗，支援伺服器即時測試、延遲檢測與 Vercel 門戶網址切換同步。")
 
-    # 檢查是否需要彈出後端連線設定小視窗
+    # 檢查是否需要彈出後端連線設定小視窗 (支援網址參數 step=backend_modal 與瀏覽器上一頁/下一頁)
+    if current_step == "backend_modal":
+        st.session_state["show_backend_config_dialog"] = True
+    elif current_step != "backend_modal" and st.query_params.get("step") != "backend_modal":
+        st.session_state["show_backend_config_dialog"] = False
+
     if st.session_state.get("show_backend_config_dialog"):
         if dialog_decorator:
             open_backend_config_modal()
