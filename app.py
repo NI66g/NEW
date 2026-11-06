@@ -2463,6 +2463,72 @@ def send_decision_email(customer_email, order_id, product_name, status, review_c
     except Exception as e:
         return False, f"❌ 郵件發送失敗：{str(e)}"
 
+def send_verification_code_email(customer_email, code):
+    """
+    於買家提交退換貨申請時，發送 6 位數隨機驗證碼至買家信箱，驗證信箱有效性
+    寄件者: zhuant610@gmail.com
+    """
+    if not customer_email or "@" not in customer_email:
+        return False, "⚠️ 買家未填寫有效之電子信箱格式。"
+
+    cfg = load_email_config()
+    sender = cfg.get("sender_email", "zhuant610@gmail.com").strip()
+    app_pwd = cfg.get("app_password", "").strip() or st.session_state.get("gmail_app_password", "").strip() or os.environ.get("GMAIL_APP_PASSWORD", "").strip()
+
+    subject = f"【電腦周邊售後客服中心】退換貨申請驗證碼：{code}"
+    html_body = f"""
+    <html>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif; background-color: #f8fafc; padding: 24px; margin: 0;">
+        <div style="max-width: 560px; margin: auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;">
+            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 20px 24px; border-bottom: 3px solid #38bdf8;">
+                <h2 style="color: #ffffff; margin: 0; font-size: 18px; font-weight: 700;">🛡️ 電腦周邊售後退換貨與爭議風控平台</h2>
+                <p style="color: #94a3b8; font-size: 13px; margin: 4px 0 0 0;">會員退換貨申請 · 電子信箱身分核驗</p>
+            </div>
+            
+            <div style="padding: 24px 28px;">
+                <p style="font-size: 15px; color: #1e293b; margin-top: 0;">親愛的買家您好：</p>
+                <p style="font-size: 14px; color: #475569; line-height: 1.6;">
+                    您正在本平台提交鍵盤、滑鼠或耳機的售後保固與退換貨申請。為確認您的聯絡信箱真實有效，並確保後續審核通知與保固處理結果能順利送達，請在網頁視窗中輸入以下 6 位數驗證碼：
+                </p>
+                
+                <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1.5px dashed #0284c7; border-radius: 10px; padding: 18px; text-align: center; margin: 20px 0;">
+                    <div style="font-size: 13px; color: #0369a1; font-weight: 600; margin-bottom: 6px;">您的送出驗證碼</div>
+                    <div style="font-size: 32px; font-weight: 900; letter-spacing: 8px; color: #0284c7; font-family: 'Courier New', monospace;">{code}</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 6px;">(驗證碼 10 分鐘內有效，請勿將驗證碼洩露給他人)</div>
+                </div>
+                
+                <p style="font-size: 13px; color: #64748b; line-height: 1.6;">
+                    ※ 若非您本人申請退換貨，請忽略此郵件，您的帳戶資訊不會受到任何影響。<br>
+                    ※ 本郵件由系統自動發送，寄件信箱：<strong>{sender}</strong>。
+                </p>
+            </div>
+            
+            <div style="background-color: #f1f5f9; padding: 12px 24px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8;">
+                電腦周邊智慧退換貨與爭議風控系統 · 守護您的消費權益
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    if not app_pwd:
+        return False, f"⚠️ 目前系統尚未設定 Gmail 應用程式密碼。若為展示測試環境，本次生成之驗證碼為【{code}】。"
+
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = f"電腦周邊售後客服中心 <{sender}>"
+        msg["To"] = customer_email
+        msg.attach(MIMEText(html_body, "html", "utf-8"))
+
+        clean_pwd = app_pwd.replace(" ", "")
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
+            server.login(sender, clean_pwd)
+            server.sendmail(sender, customer_email, msg.as_string())
+        return True, f"✅ 驗證碼已成功寄送至 {customer_email}，請至信箱查收！"
+    except Exception as e:
+        return False, f"⚠️ 郵件連線發送受阻（{str(e)}）。若為測試環境，本次驗證碼為【{code}】。"
+
 # ==========================================
 # 2.1 人機協同審核決策小視窗 (Approval / Rejection / Supplement Modals)
 # ==========================================
@@ -2731,6 +2797,129 @@ def render_supplement_dialog_content(case_id, order_id, product_name, customer_e
                 del st.session_state["active_supplement_id"]
             st.rerun()
 
+def render_return_verify_dialog_content():
+    """
+    客戶提交退換貨申請時跳出的驗證碼輸入小視窗：
+    - 顯示發送目標信箱
+    - 提供 6 位數驗證碼輸入框
+    - 【驗證並正式送出】按鈕：輸入正確才正式寫入資料庫並完成 AI 初審
+    - 【重新發送驗證碼】按鈕：重新生成隨機驗證碼並再次發送至該信箱
+    - 【取消】按鈕：退出驗證步驟，回到原表單，允許客戶修改為其他可用信箱
+    """
+    vdata = st.session_state.get("return_verify_data") or {}
+    target_email = vdata.get("customer_email", "")
+    
+    if not target_email:
+        st.warning("⚠️ 驗證資料已失效，請返回表單重新送出申請。")
+        if st.button("❌ 關閉視窗", use_container_width=True):
+            st.session_state["show_return_verify_dialog"] = False
+            st.rerun()
+        return
+
+    st.markdown(f"""
+    <div style="background: rgba(56, 189, 248, 0.08); border: 1.5px solid rgba(56, 189, 248, 0.35); border-radius: 10px; padding: 12px 16px; margin-bottom: 12px;">
+        <div style="font-size: 14.5px; font-weight: 700; color: #38bdf8; margin-bottom: 4px;">📩 驗證信已發送至您的電子信箱</div>
+        <div style="font-size: 13px; color: #cbd5e1; line-height: 1.5;">
+            為確認退換貨通知信箱真實有效，系統已生成一組 6 位數隨機驗證碼並發送至：<br>
+            <b style="color: #f8fafc; font-size: 14.5px;">{target_email}</b>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    send_status = st.session_state.get("return_verify_send_status", "")
+    if send_status:
+        if "成功" in send_status:
+            st.success(send_status)
+        else:
+            st.info(send_status)
+
+    code_input = st.text_input(
+        "請輸入 6 位數驗證碼：",
+        key="input_verify_code_modal",
+        placeholder="請輸入 6 位數字驗證碼",
+        max_chars=6
+    )
+
+    st.markdown("<div style='margin-top: 14px;'></div>", unsafe_allow_html=True)
+    
+    col_submit, col_resend, col_cancel = st.columns([1.6, 1.4, 1.0])
+    
+    with col_submit:
+        if st.button("🚀 驗證並正式送出", type="primary", use_container_width=True, key="btn_modal_verify_submit"):
+            correct_code = str(st.session_state.get("return_verify_code", "")).strip()
+            entered_code = code_input.strip()
+            if not entered_code:
+                st.error("⚠️ 請輸入收到的 6 位數驗證碼！")
+            elif entered_code != correct_code:
+                st.error("❌ 驗證碼錯誤，請重新確認郵件或點擊「重新發送」！")
+            else:
+                # 驗證成功！執行正式建檔與 AI 初審
+                with st.spinner("🤖 驗證通過！正在為您提交退貨申訴資料並執行 AI 風控初審..."):
+                    order_id = vdata.get("order_id")
+                    category = vdata.get("category")
+                    product_name = vdata.get("product_name")
+                    reason = vdata.get("reason")
+                    photos = st.session_state.get("app_buyer_photos", [])
+                    
+                    all_img_bytes = [p["bytes"] for p in photos]
+                    primary_blob, images_json_str = encode_images_to_db(all_img_bytes)
+                    
+                    api_key_to_use = st.session_state.get("gemini_api_key", "") or load_admin_config().get("gemini_api_key", "")
+                    risk_lvl, risk_score, verdict, evidence, rec = analyze_return_request(
+                        category, product_name, reason, all_img_bytes, api_key=api_key_to_use
+                    )
+                    
+                    try:
+                        conn = sqlite3.connect(DB_FILE)
+                        c = conn.cursor()
+                        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        c_user = st.session_state.get("current_user")
+                        c_uname = c_user.get("username", "") if c_user else ""
+                        c.execute("""
+                            INSERT INTO return_requests 
+                            (order_id, customer_email, product_category, product_name, customer_reason, image_data, images_json, status, risk_level, risk_score, ai_verdict, ai_evidence, ai_recommendation, created_at, username)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, '待審核', ?, ?, ?, ?, ?, ?, ?)
+                        """, (order_id, target_email, category, product_name, reason, primary_blob, images_json_str, risk_lvl, risk_score, verdict, evidence, rec, now_str, c_uname))
+                        conn.commit()
+                        conn.close()
+
+                        # 清空暫存相片與驗證狀態
+                        st.session_state["app_buyer_photos"] = []
+                        st.session_state["show_return_verify_dialog"] = False
+                        st.session_state["return_verify_code"] = None
+                        st.session_state["return_verify_data"] = None
+                        st.session_state["return_verify_send_status"] = ""
+                        st.session_state["return_submitted_success_order"] = order_id
+                        st.session_state["return_submitted_success_email"] = target_email
+                        
+                        # 重設表單欄位
+                        st.session_state["app_return_order_id"] = f"ORD-PERI-{datetime.now().strftime('%m%d%H%M')}"
+                        st.session_state["app_return_product_name"] = ""
+                        st.session_state["app_return_reason"] = ""
+                        
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ 申訴資料寫入資料庫失敗：{str(e)}。請聯繫管理員確認後台連線。")
+
+    with col_resend:
+        if st.button("🔄 重新發送驗證碼", use_container_width=True, key="btn_modal_resend_code"):
+            import random
+            new_code = f"{random.randint(100000, 999999)}"
+            st.session_state["return_verify_code"] = new_code
+            with st.spinner(f"正在重新發送驗證碼至 {target_email}..."):
+                ok, msg = send_verification_code_email(target_email, new_code)
+                st.session_state["return_verify_send_status"] = msg
+                st.rerun()
+
+    with col_cancel:
+        if st.button("❌ 取消", use_container_width=True, key="btn_modal_cancel_code"):
+            # 客戶此信箱真的不能用，退出這個步驟，回到原表單修改信箱
+            st.session_state["show_return_verify_dialog"] = False
+            st.session_state["return_verify_code"] = None
+            st.session_state["return_verify_data"] = None
+            st.session_state["return_verify_send_status"] = ""
+            st.rerun()
+
 if dialog_decorator:
     @dialog_decorator("✅ 核准退換：填寫處置理由與維修資訊")
     def open_approve_modal(case_id, order_id, product_name, customer_email, ai_verdict, ai_recommendation):
@@ -2743,6 +2932,13 @@ if dialog_decorator:
     @dialog_decorator("⚠️ 要求補件：填寫補件內容與通知")
     def open_supplement_modal(case_id, order_id, product_name, customer_email, ai_verdict, ai_recommendation):
         render_supplement_dialog_content(case_id, order_id, product_name, customer_email, ai_verdict, ai_recommendation)
+
+    @dialog_decorator("📧 請輸入電子信箱驗證碼")
+    def open_return_verify_modal():
+        render_return_verify_dialog_content()
+else:
+    def open_return_verify_modal():
+        render_return_verify_dialog_content()
 
 
 # ==========================================
@@ -2952,7 +3148,7 @@ if current_user is None:
 # ==========================================
 # 已登入狀態：依照身分角色分流選單與功能
 # ==========================================
-is_admin = (current_user["role"] == "admin")
+is_admin = (current_user.get("role") == "admin") if isinstance(current_user, dict) else False
 st.session_state["admin_authenticated"] = is_admin
 
 # 畫面上方功能按鈕配置 (側邊欄已完全刪除；依身分角色分流按鈕)
@@ -3062,10 +3258,15 @@ if menu == "📝 買家：提交退換貨申請":
     col1, col2 = st.columns([1, 1], gap="large")
     with col1:
         st.markdown("#### 📝 填寫申訴資訊")
-        order_id = st.text_input("訂單編號", value=f"ORD-PERI-{datetime.now().strftime('%m%d%H%M')}")
+        if "app_return_order_id" not in st.session_state:
+            st.session_state["app_return_order_id"] = f"ORD-PERI-{datetime.now().strftime('%m%d%H%M')}"
+        order_id = st.text_input("訂單編號", key="app_return_order_id")
+        
         default_email = current_user.get("email", "") if current_user else ""
-        customer_email = st.text_input("買家電子信箱 (Email) *必填，接收審核判決通知", value=default_email, placeholder="例如：buyer@example.com")
-        category = st.selectbox("周邊商品類別 (僅限電腦周邊)", PERIPHERAL_CATEGORIES)
+        if "app_return_customer_email" not in st.session_state:
+            st.session_state["app_return_customer_email"] = default_email
+        customer_email = st.text_input("買家電子信箱 (Email) *必填，接收審核判決通知", key="app_return_customer_email", placeholder="例如：buyer@example.com")
+        category = st.selectbox("周邊商品類別 (僅限電腦周邊)", PERIPHERAL_CATEGORIES, key="app_return_category")
         
         # 依據所選周邊顯示專屬檢驗指引
         if "鍵盤" in category:
@@ -3075,9 +3276,10 @@ if menu == "📝 買家：提交退換貨申請":
         elif "耳機" in category:
             st.caption("💡 **耳機檢驗提示**：建議拍照包含頭樑伸縮關節、耳罩皮革與線材接頭；請註明是左耳、右耳或麥克風異常。")
 
-        product_name = st.text_input("周邊商品型號 / 全名", placeholder="例如：Logitech G PRO X 機械鍵盤 / Razer Viper V2 Pro 無線滑鼠 / HyperX Cloud III 耳麥")
+        product_name = st.text_input("周邊商品型號 / 全名", key="app_return_product_name", placeholder="例如：Logitech G PRO X 機械鍵盤 / Razer Viper V2 Pro 無線滑鼠 / HyperX Cloud III 耳麥")
         reason = st.text_area(
             "瑕疵/異常原因詳細說明", 
+            key="app_return_reason",
             placeholder="請清楚描述周邊異常狀態（例如：滑鼠左鍵點一下會連點成雙擊、鍵盤空白鍵卡住回彈不良、耳機左耳完全無聲音等）", 
             height=130
         )
@@ -3189,39 +3391,39 @@ if menu == "📝 買家：提交退換貨申請":
         elif not st.session_state.get("app_buyer_photos", []):
             st.error("❌ 申請失敗：為加速出廠保固核銷，系統規定【必須上傳至少一張瑕疵佐證照片】否則不給予受理申請！請使用相機或上方按鈕選取照片後再送出。")
         else:
-            with st.spinner("🤖 正在為您提交退貨申訴資料並進行初步建檔..."):
-                all_img_bytes = [p["bytes"] for p in st.session_state["app_buyer_photos"]]
-                primary_blob, images_json_str = encode_images_to_db(all_img_bytes)
-                
-                # 執行電腦周邊 AI 風控初審 (優先調用已設定之 Gemini API，無則使用專用風控引擎)
-                api_key_to_use = st.session_state.get("gemini_api_key", "") or load_admin_config().get("gemini_api_key", "")
-                risk_lvl, risk_score, verdict, evidence, rec = analyze_return_request(
-                    category, product_name, reason, all_img_bytes, api_key=api_key_to_use
-                )
+            # 產生 6 位數隨機驗證碼並暫存表單資料
+            import random
+            verify_code = f"{random.randint(100000, 999999)}"
+            st.session_state["return_verify_code"] = verify_code
+            st.session_state["return_verify_data"] = {
+                "order_id": order_id,
+                "customer_email": customer_email.strip(),
+                "category": category,
+                "product_name": product_name,
+                "reason": reason,
+            }
+            with st.spinner(f"正在生成 6 位數驗證碼並發送至您的信箱 ({customer_email.strip()})..."):
+                ok, msg = send_verification_code_email(customer_email.strip(), verify_code)
+                st.session_state["return_verify_send_status"] = msg
+            st.session_state["show_return_verify_dialog"] = True
+            st.rerun()
 
-                # 寫入 SQLite (disputes.db)
-                try:
-                    conn = sqlite3.connect(DB_FILE)
-                    c = conn.cursor()
-                    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    c_uname = current_user.get("username", "") if current_user else ""
-                    c.execute("""
-                        INSERT INTO return_requests 
-                        (order_id, customer_email, product_category, product_name, customer_reason, image_data, images_json, status, risk_level, risk_score, ai_verdict, ai_evidence, ai_recommendation, created_at, username)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, '待審核', ?, ?, ?, ?, ?, ?, ?)
-                    """, (order_id, customer_email.strip(), category, product_name, reason, primary_blob, images_json_str, risk_lvl, risk_score, verdict, evidence, rec, now_str, c_uname))
-                    conn.commit()
-                    conn.close()
+    # 檢查是否需要彈出退換貨信箱驗證碼小視窗
+    if st.session_state.get("show_return_verify_dialog"):
+        if dialog_decorator:
+            open_return_verify_modal()
+        else:
+            render_return_verify_dialog_content()
 
-                    # 送出成功後清空暫存照片
-                    st.session_state["app_buyer_photos"] = []
-
-                    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 📦 買家成功提交案件：{order_id} ({product_name}) -> 資料庫: {DB_FILE}")
-                    st.success(f"🎉 退換貨申請已成功提交！您的案件編號為 **`{order_id}`**。")
-                    st.info(f"📧 審核結果將寄發至您的電子信箱：**`{customer_email.strip()}`**。您亦可隨時在左側「🔍 查詢申請進度」輸入訂單編號追蹤審核狀態。")
-                    st.balloons()
-                except Exception as e:
-                    st.error(f"❌ 申訴資料寫入資料庫失敗：{str(e)}。請聯繫系統管理員確認後台連線。")
+    # 若驗證通過並正式提交成功，顯示慶祝特效與案件資訊
+    if st.session_state.get("return_submitted_success_order"):
+        succ_order = st.session_state.pop("return_submitted_success_order")
+        succ_email = st.session_state.pop("return_submitted_success_email", "")
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] 📦 買家完成信箱驗證並成功提交案件：{succ_order} -> 資料庫: {DB_FILE}")
+        st.success(f"🎉 驗證成功！退換貨申請已正式提交！您的案件編號為 **`{succ_order}`**。")
+        if succ_email:
+            st.info(f"📧 審核結果將寄發至您的電子信箱：**`{succ_email}`**。您亦可隨時在「🔍 買家：查詢進度 / 補充照片」輸入訂單編號追蹤審核狀態。")
+        st.balloons()
 
 # ==========================================
 # 買家門戶 模組二：查詢申請進度 / 補充照片 (Buyer Query & Supplement)
