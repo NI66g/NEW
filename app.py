@@ -230,15 +230,15 @@ DARK_CSS = """
             padding-bottom: 2rem !important;
         }
     }
-    /* 全域科技感微光漸層背景與微網格 */
+    /* 全域高端科技深藍微光漸層背景與細緻網格 */
     .stApp {
         background: 
-            radial-gradient(circle at 12% 15%, rgba(56, 189, 248, 0.12) 0%, transparent 45%),
-            radial-gradient(circle at 88% 18%, rgba(168, 85, 247, 0.14) 0%, transparent 45%),
-            radial-gradient(circle at 50% 88%, rgba(34, 197, 94, 0.08) 0%, transparent 50%),
-            linear-gradient(135deg, #090d16 0%, #0f172a 45%, #0a0f1d 100%) !important;
+            radial-gradient(circle at 15% 15%, rgba(14, 165, 233, 0.15) 0%, transparent 45%),
+            radial-gradient(circle at 85% 20%, rgba(99, 102, 241, 0.14) 0%, transparent 45%),
+            radial-gradient(circle at 50% 90%, rgba(16, 185, 129, 0.08) 0%, transparent 55%),
+            linear-gradient(145deg, #070b14 0%, #0b1120 40%, #0f172a 100%) !important;
         background-attachment: fixed !important;
-        color: #f1f5f9 !important;
+        color: #f8fafc !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif !important;
     }
 
@@ -307,12 +307,12 @@ DARK_CSS = """
     [data-baseweb="input"],
     [data-baseweb="textarea"],
     [data-baseweb="base-input"] {
-        background-color: #1e293b !important;
-        background: #1e293b !important;
-        border: 1px solid rgba(255, 255, 255, 0.25) !important;
-        border-radius: 8px !important;
+        background-color: #0f172a !important;
+        background: #0f172a !important;
+        border: 1px solid rgba(56, 189, 248, 0.28) !important;
+        border-radius: 10px !important;
         overflow: hidden !important;
-        transition: all 0.2s ease !important;
+        transition: all 0.25s ease !important;
     }
     div[data-testid="stTextInputRootElement"]:focus-within,
     div[data-testid="stTextAreaRootElement"]:focus-within {
@@ -537,13 +537,14 @@ DARK_CSS = """
 
     /* 頂部主視覺科技橫幅卡片 */
     .tech-hero {
-        background: linear-gradient(135deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.85) 100%);
-        border: 1px solid rgba(99, 102, 241, 0.35);
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(11, 18, 33, 0.95) 100%);
+        border: 1px solid rgba(56, 189, 248, 0.32);
         border-radius: 16px;
         padding: 24px 28px;
         margin-bottom: 24px;
-        box-shadow: 0 10px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(12px);
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(56, 189, 248, 0.2);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         position: relative;
         overflow: hidden;
     }
@@ -1189,12 +1190,12 @@ LIGHT_CSS = """
             padding-bottom: 2rem !important;
         }
     }
-    /* 全域清爽亮麗漸層背景與微網格 */
+    /* 全域優雅紙白與柔和暖灰漸層背景 */
     .stApp {
         background: 
-            radial-gradient(circle at 10% 12%, rgba(2, 132, 199, 0.06) 0%, transparent 40%),
-            radial-gradient(circle at 90% 15%, rgba(99, 102, 241, 0.06) 0%, transparent 40%),
-            linear-gradient(135deg, #f8fafc 0%, #f1f5f9 45%, #e2e8f0 100%) !important;
+            radial-gradient(circle at 12% 15%, rgba(14, 165, 233, 0.04) 0%, transparent 45%),
+            radial-gradient(circle at 88% 20%, rgba(99, 102, 241, 0.04) 0%, transparent 45%),
+            linear-gradient(150deg, #ffffff 0%, #f9fafb 45%, #f1f5f9 100%) !important;
         background-attachment: fixed !important;
         color: #0f172a !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif !important;
@@ -1490,19 +1491,19 @@ LIGHT_CSS = """
         font-weight: 600;
     }
 
-    /* 淺色橫幅卡片 */
+    /* 優雅紙白精緻橫幅卡片 */
     .tech-hero {
-        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        border: 1px solid #cbd5e1;
+        background: linear-gradient(140deg, #ffffff 0%, #f8fafc 60%, #f1f5f9 100%);
+        border: 1px solid #e2e8f0;
         border-radius: 16px;
         padding: 24px 28px;
         margin-bottom: 24px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.03);
         position: relative;
         overflow: hidden;
     }
     .hero-title {
-        background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%);
+        background: linear-gradient(135deg, #0284c7 0%, #2563eb 50%, #4f46e5 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-size: 26px;
