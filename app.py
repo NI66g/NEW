@@ -3040,226 +3040,110 @@ if "current_user" not in st.session_state:
 
 current_user = st.session_state.get("current_user")
 
-# 初始化登入畫面顯示旗標 (預設為 False，即直接呈現放上貓咪的形象首頁)
-if "show_login_page" not in st.session_state:
-    st.session_state["show_login_page"] = False
-
-# 未登入狀態：依據狀態顯示「全新形象首頁」或「原本的登入首頁」
+# 未登入狀態：主畫面直接提供風格與登入門戶 (已完全移除側邊欄)
 if current_user is None:
 
-    # 1. 全新形象首頁：讓貓咪圖片100%占滿整個 Chrome 視窗，右上角設置登入按鈕
-    if not st.session_state.get("show_login_page", False):
-        cat_img_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cat_landing.jpg")
-        if not os.path.exists(cat_img_path):
-            cat_img_path = r"C:\Users\User\Downloads\10777\cat_landing.jpg"
-
-        b64_cat = ""
-        if os.path.exists(cat_img_path):
-            with open(cat_img_path, "rb") as f:
-                b64_cat = base64.b64encode(f.read()).decode("ascii")
-
-        st.markdown(f"""
-        <style>
-        /* 隱藏原生多餘邊距與捲軸，確保貓咪圖片100%占滿整個 Chrome 視窗，零背景色露出 */
-        html, body, [data-testid="stAppViewContainer"], .main, section.main, .block-container {{
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            max-width: 100vw !important;
-            max-height: 100vh !important;
-            overflow: hidden !important;
-        }}
-        
-        /* 貓咪圖片全螢幕滿版鋪滿 (Full Viewport Cover) */
-        .cat-fullscreen-cover {{
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            z-index: 100 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: hidden !important;
-            background: linear-gradient(to right, #011b32 0%, #0d162d 50%, #200a38 100%) !important;
-        }}
-        .cat-fullscreen-cover img {{
-            width: 100vw !important;
-            height: 100vh !important;
-            object-fit: cover !important;
-            object-position: center bottom !important;
-            display: block !important;
-            border: none !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }}
-
-        @media (max-aspect-ratio: 16/10) {{
-            .cat-fullscreen-cover img {{
-                object-fit: contain !important;
-                object-position: center center !important;
-            }}
-        }}
-
-        /* 右上角固定懸浮「登入」按鈕 */
-        .st-key-btn_landing_top_login {{
-            position: fixed !important;
-            top: 24px !important;
-            right: 28px !important;
-            z-index: 999999 !important;
-            width: auto !important;
-        }}
-        .st-key-btn_landing_top_login button {{
-            border-radius: 28px !important;
-            padding: 10px 32px !important;
-            font-size: 16px !important;
-            font-weight: 700 !important;
-            background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%) !important;
-            color: #ffffff !important;
-            border: 2px solid rgba(255, 255, 255, 0.75) !important;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 18px rgba(59, 130, 246, 0.7) !important;
-            cursor: pointer !important;
-            letter-spacing: 2px !important;
-            transition: all 0.25s ease !important;
-        }}
-        .st-key-btn_landing_top_login button:hover {{
-            transform: translateY(-2px) scale(1.05) !important;
-            background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%) !important;
-            border-color: #ffffff !important;
-            box-shadow: 0 6px 28px rgba(0, 0, 0, 0.75), 0 0 25px rgba(96, 165, 250, 0.95) !important;
-            color: #ffffff !important;
-        }}
-        </style>
-        
-        <div class="cat-fullscreen-cover">
-            <img src="data:image/jpeg;base64,{b64_cat}" alt="3C退貨一件審核 首頁形象" />
-        </div>
-        """, unsafe_allow_html=True)
-
-        # 右上角登入按鈕 (由 CSS 定位在畫面右上角，點擊進入原本的登入首頁)
-        if st.button("登入", key="btn_landing_top_login", type="primary"):
-            st.session_state["show_login_page"] = True
-            st.rerun()
-
-        st.stop()
-
-    # 2. 原本的登入首頁 (點擊右上角登入後進入)
-    else:
-        # 提供返回形象首頁按鈕
-        col_back_btn, col_back_spacer = st.columns([1.5, 5.0])
-        with col_back_btn:
-            if st.button("⬅️ 返回首頁 (貓咪形象)", key="btn_back_to_cat_landing", use_container_width=True):
-                st.session_state["show_login_page"] = False
-                st.rerun()
-
-        # 主畫面呈現：精緻的登入與註冊整合門戶 (原本的登入首頁)
-        st.markdown("""
-        <div class="tech-hero">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-                <div>
-                    <div class="hero-title">🛡️ 電腦周邊智慧售後退換貨與爭議風控平台</div>
-                    <div class="hero-subtitle">
-                        基於 Google Gemini 3.8 Flash 多模態 AI · 鍵盤／滑鼠／耳機人機協同審核決策系統
-                    </div>
-                </div>
-                <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <span class="badge-item">🔐 帳號登入制</span>
-                    <span class="badge-item">⚡ 角色分流權限</span>
+    # 主畫面呈現：精緻的登入與註冊整合門戶
+    st.markdown("""
+    <div class="tech-hero">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <div>
+                <div class="hero-title">🛡️ 電腦周邊智慧售後退換貨與爭議風控平台</div>
+                <div class="hero-subtitle">
+                    基於 Google Gemini 3.8 Flash 多模態 AI · 鍵盤／滑鼠／耳機人機協同審核決策系統
                 </div>
             </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <span class="badge-item">🔐 帳號登入制</span>
+                <span class="badge-item">⚡ 角色分流權限</span>
+            </div>
         </div>
-        """, unsafe_allow_html=True)
+    </div>
+    """, unsafe_allow_html=True)
 
-        col_auth_info, col_theme_toggle = st.columns([4, 1.4])
-        with col_auth_info:
-            st.caption("📧 系統客服信箱：zhuant610@gmail.com ｜ 鍵盤、滑鼠、耳機人機協同風控平台")
-        with col_theme_toggle:
-            auth_theme_choice = st.radio(
-                "色彩模式",
-                ["🌙 深色", "☀️ 淺色"],
-                index=0 if is_dark else 1,
-                horizontal=True,
-                key="auth_screen_theme_radio",
-                label_visibility="collapsed"
-            )
-            if auth_theme_choice != st.session_state.get("app_theme_choice"):
-                st.session_state["app_theme_choice"] = auth_theme_choice
+    col_auth_info, col_theme_toggle = st.columns([4, 1.4])
+    with col_auth_info:
+        st.caption("📧 系統客服信箱：zhuant610@gmail.com ｜ 鍵盤、滑鼠、耳機人機協同風控平台")
+    with col_theme_toggle:
+        auth_theme_choice = st.radio(
+            "色彩模式",
+            ["🌙 深色", "☀️ 淺色"],
+            index=0 if is_dark else 1,
+            horizontal=True,
+            key="auth_screen_theme_radio",
+            label_visibility="collapsed"
+        )
+        if auth_theme_choice != st.session_state.get("app_theme_choice"):
+            st.session_state["app_theme_choice"] = auth_theme_choice
+            st.rerun()
+
+    auth_tab_login, auth_tab_register = st.tabs(["🔑 會員登入 (Sign In)", "📝 註冊新帳號 (Sign Up)"])
+
+    with auth_tab_login:
+        st.markdown("#### 🔑 請輸入帳號密碼登入系統：")
+        col_l1, col_l2 = st.columns([1, 1])
+        with col_l1:
+            login_user = st.text_input("帳號 (Username)", key="input_login_username", placeholder="例如: admin 或 buyer01")
+        with col_l2:
+            login_pwd = st.text_input("密碼 (Password)", type="password", key="input_login_password", placeholder="請輸入密碼")
+
+        if st.button("🚀 登入系統", type="primary", use_container_width=True, key="btn_do_login"):
+            ok, uinfo, msg = authenticate_user(login_user, login_pwd)
+            if ok:
+                st.session_state["current_user"] = uinfo
+                st.session_state["admin_authenticated"] = (uinfo["role"] == "admin")
+                st.success(f"{msg} 歡迎回來，【{uinfo['username']}】！")
                 st.rerun()
+            else:
+                st.error(msg)
 
-        auth_tab_login, auth_tab_register = st.tabs(["🔑 會員登入 (Sign In)", "📝 註冊新帳號 (Sign Up)"])
-
-        with auth_tab_login:
-            st.markdown("#### 🔑 請輸入帳號密碼登入系統：")
-            col_l1, col_l2 = st.columns([1, 1])
-            with col_l1:
-                login_user = st.text_input("帳號 (Username)", key="input_login_username", placeholder="例如: admin 或 buyer01")
-            with col_l2:
-                login_pwd = st.text_input("密碼 (Password)", type="password", key="input_login_password", placeholder="請輸入密碼")
-
-            if st.button("🚀 登入系統", type="primary", use_container_width=True, key="btn_do_login"):
-                ok, uinfo, msg = authenticate_user(login_user, login_pwd)
+        st.markdown("---")
+        st.caption("💡 **專題評審與口試展示專用快速體驗通道（點擊即可自動登入）：**")
+        qc1, qc2 = st.columns(2)
+        with qc1:
+            if st.button("🛡️ 快速以【管理方 (stillni)】身分登入", use_container_width=True):
+                ok, uinfo, msg = authenticate_user("stillni", "1919clow114514")
+                if not ok:
+                    ok, uinfo, msg = authenticate_user("admin", "admin888")
                 if ok:
                     st.session_state["current_user"] = uinfo
-                    st.session_state["admin_authenticated"] = (uinfo["role"] == "admin")
-                    st.session_state["show_login_page"] = False
-                    st.success(f"{msg} 歡迎回來，【{uinfo['username']}】！")
+                    st.session_state["admin_authenticated"] = True
+                    st.rerun()
+        with qc2:
+            if st.button("👤 快速以【一般使用者 (買家)】身分登入 (buyer01 / buyer123)", use_container_width=True):
+                ok, uinfo, msg = authenticate_user("buyer01", "buyer123")
+                if ok:
+                    st.session_state["current_user"] = uinfo
+                    st.session_state["admin_authenticated"] = False
+                    st.rerun()
+
+    with auth_tab_register:
+        st.markdown("#### 📝 填寫資料建立新會員帳號：")
+        rc1, rc2 = st.columns(2)
+        with rc1:
+            reg_username = st.text_input("設定帳號 (至少3個字元)", key="input_reg_username", placeholder="例如: my_username")
+            reg_email = st.text_input("通知電子信箱 (接收審核結果通知)", key="input_reg_email", placeholder="例如: yourname@gmail.com")
+        with rc2:
+            reg_pwd = st.text_input("設定密碼 (至少4個字元)", type="password", key="input_reg_pwd")
+            reg_pwd_confirm = st.text_input("確認密碼", type="password", key="input_reg_pwd_confirm")
+
+        st.caption("※ 註冊完成即獲得買家帳號資格，可立即提交周邊退換貨申請、上傳照片進行 AI 檢驗與查詢進度。")
+
+        if st.button("✨ 立即建立會員帳號並登入", type="primary", use_container_width=True, key="btn_do_register"):
+            if reg_pwd != reg_pwd_confirm:
+                st.error("❌ 兩次輸入的密碼不一致，請再次確認！")
+            else:
+                ok, msg = register_user(reg_username, reg_pwd, reg_email, role="user")
+                if ok:
+                    _, uinfo, _ = authenticate_user(reg_username, reg_pwd)
+                    st.session_state["current_user"] = uinfo
+                    st.session_state["admin_authenticated"] = False
+                    st.success(msg)
                     st.rerun()
                 else:
                     st.error(msg)
 
-            st.markdown("---")
-            st.caption("💡 **專題評審與口試展示專用快速體驗通道（點擊即可自動登入）：**")
-            qc1, qc2 = st.columns(2)
-            with qc1:
-                if st.button("🛡️ 快速以【管理方 (stillni)】身分登入", use_container_width=True):
-                    ok, uinfo, msg = authenticate_user("stillni", "1919clow114514")
-                    if not ok:
-                        ok, uinfo, msg = authenticate_user("admin", "admin888")
-                    if ok:
-                        st.session_state["current_user"] = uinfo
-                        st.session_state["admin_authenticated"] = True
-                        st.session_state["show_login_page"] = False
-                        st.rerun()
-            with qc2:
-                if st.button("👤 快速以【一般使用者 (買家)】身分登入 (buyer01 / buyer123)", use_container_width=True):
-                    ok, uinfo, msg = authenticate_user("buyer01", "buyer123")
-                    if ok:
-                        st.session_state["current_user"] = uinfo
-                        st.session_state["admin_authenticated"] = False
-                        st.session_state["show_login_page"] = False
-                        st.rerun()
-
-        with auth_tab_register:
-            st.markdown("#### 📝 填寫資料建立新會員帳號：")
-            rc1, rc2 = st.columns(2)
-            with rc1:
-                reg_username = st.text_input("設定帳號 (至少3個字元)", key="input_reg_username", placeholder="例如: my_username")
-                reg_email = st.text_input("通知電子信箱 (接收審核結果通知)", key="input_reg_email", placeholder="例如: yourname@gmail.com")
-            with rc2:
-                reg_pwd = st.text_input("設定密碼 (至少4個字元)", type="password", key="input_reg_pwd")
-                reg_pwd_confirm = st.text_input("確認密碼", type="password", key="input_reg_pwd_confirm")
-
-            st.caption("※ 註冊完成即獲得買家帳號資格，可立即提交周邊退換貨申請、上傳照片進行 AI 檢驗與查詢進度。")
-
-            if st.button("✨ 立即建立會員帳號並登入", type="primary", use_container_width=True, key="btn_do_register"):
-                if reg_pwd != reg_pwd_confirm:
-                    st.error("❌ 兩次輸入的密碼不一致，請再次確認！")
-                else:
-                    ok, msg = register_user(reg_username, reg_pwd, reg_email, role="user")
-                    if ok:
-                        _, uinfo, _ = authenticate_user(reg_username, reg_pwd)
-                        st.session_state["current_user"] = uinfo
-                        st.session_state["admin_authenticated"] = False
-                        st.session_state["show_login_page"] = False
-                        st.success(msg)
-                        st.rerun()
-                    else:
-                        st.error(msg)
-
-        st.stop()
+    st.stop()
 
 # ==========================================
 # 已登入狀態：依照身分角色分流選單與功能
@@ -3321,7 +3205,6 @@ with st.container(key="top_navigation_bar"):
         if st.button("登出", key="btn_top_logout", type="secondary", use_container_width=True):
             st.session_state["current_user"] = None
             st.session_state["admin_authenticated"] = False
-            st.session_state["show_login_page"] = False
             st.rerun()
 
 menu = st.session_state["active_nav_menu"]
