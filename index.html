@@ -69,6 +69,7 @@
 
     /* Floating Integrated Control Capsule (Seamlessly merged with the site) */
     .floating-capsule {
+      display: none !important;
       position: fixed;
       top: 10px;
       right: 14px;
@@ -347,6 +348,7 @@
         display: none;
       }
       .floating-capsule {
+      display: none !important;
         padding: 4px 8px;
         top: 6px;
         right: 8px;
@@ -356,26 +358,7 @@
 </head>
 <body>
 
-  <!-- Floating Integrated Control Capsule (Seamlessly merged with the site) -->
-  <aside class="floating-capsule">
-    <div class="capsule-brand">
-      <span class="capsule-dot"></span>
-      <span>Vercel<span class="hide-mobile"> 門戶</span></span>
-    </div>
-    <div class="capsule-divider"></div>
-    <button class="capsule-btn" onclick="openArchModal()" title="查看專題微服務架構說明">
-      📐 <span class="btn-text">專題架構</span>
-    </button>
-    <button class="capsule-btn" onclick="openConfigModal()" title="設定或切換 Python 後端網址">
-      ⚙️ <span class="btn-text">後端連線</span>
-    </button>
-    <button class="capsule-btn" onclick="reloadFrame()" title="重新整理網頁">
-      🔄
-    </button>
-    <a id="external-link" class="capsule-btn primary" href="#" target="_blank" rel="noopener noreferrer" title="在新分頁開啟獨立系統">
-      🚀 <span class="btn-text">新分頁</span>
-    </a>
-  </aside>
+  
 
   <!-- Fullscreen Main Workspace -->
   <main>
@@ -432,6 +415,19 @@
       </div>
       <div style="font-size: 12px; color: #475569; margin-top: 24px;">
         喚醒後約需 30–60 秒重新啟動，頁面將自動重新整理
+      </div>
+      <div style="margin-top: 14px;">
+        <button onclick="openConfigModal()" style="
+          background: transparent;
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: #94a3b8;
+          font-size: 12.5px;
+          padding: 6px 14px;
+          border-radius: 8px;
+          cursor: pointer;
+        ">
+          ⚙️ 設定後端伺服器連線網址
+        </button>
       </div>
       <div id="retry-countdown" style="font-size: 13px; color: #38bdf8; margin-top: 12px;"></div>
     </div>
@@ -514,6 +510,24 @@
     const DEFAULT_BACKEND_URL = "https://c79p6iaujeyjubfmyygaqj.streamlit.app";
     const STORAGE_KEY = "warranty_copilot_backend_url";
 
+        window.addEventListener("message", function(e) {
+      if (e.data && e.data.type === "open_backend_config") {
+        openConfigModal();
+      } else if (e.data && e.data.type === "set_backend") {
+        if (e.data.url) {
+          localStorage.setItem(STORAGE_KEY, e.data.url);
+          const backendInput = document.getElementById("backend-input");
+          if (backendInput) backendInput.value = e.data.url;
+          let targetSrc = e.data.url;
+          if (!targetSrc.includes("embed=true")) {
+            targetSrc += (targetSrc.includes("?") ? "&" : "?") + "embed=true";
+          }
+          const iframe = document.getElementById("app-frame");
+          if (iframe) iframe.src = targetSrc;
+        }
+      }
+    });
+
     function getBackendUrl() {
       const urlParams = new URLSearchParams(window.location.search);
       const queryBackend = urlParams.get("backend");
@@ -535,7 +549,7 @@
       const backendInput = document.getElementById("backend-input");
 
       backendInput.value = backendUrl;
-      extLink.href = backendUrl;
+      if (extLink) extLink.href = backendUrl;
 
       let targetSrc = backendUrl;
       if (!targetSrc.includes("embed=true")) {

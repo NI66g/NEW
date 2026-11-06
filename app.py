@@ -1999,7 +1999,8 @@ def load_admin_config():
     default_cfg = {
         "admin_password": "admin888",
         "gemini_api_key": "",
-        "gemini_model_name": "gemini-3.8-flash"
+        "gemini_model_name": "gemini-3.8-flash",
+        "backend_url": "https://c79p6iaujeyjubfmyygaqj.streamlit.app"
     }
     if os.path.exists(ADMIN_CONFIG_FILE):
         try:
@@ -4294,6 +4295,55 @@ elif menu in ["⚙️ 系統設定 & 外觀風格", "⚙️ 系統設定 & API"]
             st.rerun()
     with c_theme2:
         st.info(f"💡 目前套用主題：**{st.session_state.get('app_theme_choice', '🌙 深色')}**。切換後立即可見效果。")
+
+    st.markdown("---")
+
+    # 區塊: 🌐 系統後端伺服器連線設定 (Backend Connection)
+    st.markdown("---")
+    st.markdown("### 🌐 系統後端伺服器連線設定 (Backend Connection)")
+    st.caption("管理目前 Vercel 雲端入口門戶與 Streamlit AI 運算容器之連線端點網址：")
+
+    cur_backend = admin_cfg.get("backend_url", "https://c79p6iaujeyjubfmyygaqj.streamlit.app") if is_admin else "https://c79p6iaujeyjubfmyygaqj.streamlit.app"
+
+    col_b1, col_b2 = st.columns([3, 1])
+    with col_b1:
+        new_backend = st.text_input(
+            "Streamlit 核心後端網址 (Backend URL)",
+            value=cur_backend,
+            key="input_settings_backend_url",
+            placeholder="例如: https://c79p6iaujeyjubfmyygaqj.streamlit.app",
+            help="設定 Vercel 雲端門戶要連接之 Python Streamlit 後端網址"
+        )
+    with col_b2:
+        st.markdown("<div style='margin-top:28px;'></div>", unsafe_allow_html=True)
+        if st.button("💾 儲存並同步連線", type="primary", use_container_width=True, key="btn_save_backend_url"):
+            clean_url = new_backend.strip().rstrip('/')
+            if clean_url:
+                save_admin_config(backend_url=clean_url)
+                st.session_state["backend_url"] = clean_url
+                st.components.v1.html(f"""
+                <script>
+                if (window.parent) {{
+                    window.parent.postMessage({{type: 'set_backend', url: '{clean_url}'}}, '*');
+                }}
+                </script>
+                """, height=0)
+                st.success(f"✅ 後端網址已儲存並同步！新連線端點：`{clean_url}`")
+            else:
+                st.error("請輸入有效的後端網址！")
+
+    c_pop1, c_pop2 = st.columns([2, 3])
+    with c_pop1:
+        if st.button("⚙️ 開啟 Vercel 連線設定視窗", use_container_width=True, key="btn_open_portal_config"):
+            st.components.v1.html("""
+            <script>
+            if (window.parent) {
+                window.parent.postMessage({type: 'open_backend_config'}, '*');
+            }
+            </script>
+            """, height=0)
+    with c_pop2:
+        st.caption("💡 點擊可於外層 Vercel 門戶直接呼叫獨立設定視窗，支援即時測試與網址切換。")
 
     st.markdown("---")
 
