@@ -3445,6 +3445,8 @@ def render_return_verify_dialog_content():
 
                         # 清空暫存相片與驗證狀態
                         st.session_state["app_buyer_photos"] = []
+                        st.session_state["app_deleted_photo_hashes"] = set()
+                        st.session_state["buyer_uploader_ver"] = st.session_state.get("buyer_uploader_ver", 0) + 1
                         st.session_state["show_return_verify_dialog"] = False
                         st.session_state["return_verify_code"] = None
                         st.session_state["return_verify_data"] = None
@@ -4084,9 +4086,13 @@ if menu == "📝 提交退換貨申請":
     </div>
     """, unsafe_allow_html=True)
 
-    # 初始化 session_state 中的買家照片清單
+    # 初始化 session_state 中的買家照片清單與上傳狀態
     if "app_buyer_photos" not in st.session_state:
         st.session_state["app_buyer_photos"] = []
+    if "app_deleted_photo_hashes" not in st.session_state:
+        st.session_state["app_deleted_photo_hashes"] = set()
+    if "buyer_uploader_ver" not in st.session_state:
+        st.session_state["buyer_uploader_ver"] = 0
 
     col1, col2 = st.columns([1, 1], gap="large")
     with col1:
@@ -4121,46 +4127,57 @@ if menu == "📝 提交退換貨申請":
         st.markdown("#### 📸 提供瑕疵佐證照片 *(必填，可選取多張)")
         st.caption("支援手機鏡頭拍照 (可拍多張) 或從相簿/電腦選取多張檔案，送出前可預覽並隨時刪除修改")
         
-        photo_tabs = st.tabs(["📷 手機鏡頭直接拍照", "📁 從相簿/電腦選取 (支援多張)"])
+        u_ver = st.session_state.get("buyer_uploader_ver", 0)
+        del_hashes = st.session_state.get("app_deleted_photo_hashes", set())
+
+        photo_tabs = st.tabs(["📷 手機拍照 / 上傳 (支援多張)", "📁 電腦 / 相簿選取 (支援多張)"])
         with photo_tabs[0]:
             st.markdown(
                 '''
-                <label for="cam_native_main" style="
+                <div style="
                     display:flex;align-items:center;justify-content:center;gap:10px;
                     background:linear-gradient(135deg,#2563eb,#4f46e5);
-                    color:#fff;font-size:16px;font-weight:700;
-                    padding:14px 28px;border-radius:12px;cursor:pointer;
-                    box-shadow:0 4px 14px rgba(37,99,235,0.4);
-                    margin:8px 0;user-select:none;text-align:center;
+                    color:#fff;font-size:15px;font-weight:700;
+                    padding:12px 24px;border-radius:12px;
+                    box-shadow:0 4px 14px rgba(37,99,235,0.3);
+                    margin:6px 0 10px 0;user-select:none;text-align:center;
                 ">
-                    &#128247;&nbsp; 點此開啟手機相機拍照
-                </label>
-                <input id="cam_native_main" type="file" accept="image/*" capture="environment" style="display:none;">
-                <p style="font-size:12px;color:#94a3b8;margin-top:6px;">
-                    &#128241; 手機點按鈕則直接開啟相機，電腦點選將開啟檔案選取視窗
+                    📸 支援多張照片同時上傳與手機相機拍照
+                </div>
+                <p style="font-size:12px;color:#94a3b8;margin-top:-4px;margin-bottom:8px;">
+                    📱 手機點選可直接開啟相機拍照或自相簿複選多張；電腦端可拖曳或一次多選檔案。
                 </p>
                 ''',
                 unsafe_allow_html=True
             )
-            cam_photo = st.file_uploader(
-                "或選取照片檔案",
-                type=["jpg","jpeg","png","webp","heic","JPG","JPEG","PNG"],
-                key="app_buyer_cam_photo",
-                label_visibility="collapsed"
+            cam_photos = st.file_uploader(
+                "選取或拍攝照片檔案 (可複選多張檔案)",
+                type=["jpg", "jpeg", "png", "webp", "bmp", "heic", "JPG", "JPEG", "PNG", "WEBP", "HEIC"],
+                accept_multiple_files=True,
+                key=f"app_buyer_cam_photo_{u_ver}",
+                help="支援一次選取多張照片，或分批上傳多張照片"
             )
-            if cam_photo is not None:
-                cam_bytes = cam_photo.getvalue()
+            if cam_photos:
                 existing_bytes = [p["bytes"] for p in st.session_state["app_buyer_photos"]]
-                if cam_bytes not in existing_bytes:
-                    p_name = f"相機拍攝 #{len(st.session_state['app_buyer_photos']) + 1}"
-                    st.session_state["app_buyer_photos"].append({"name": p_name, "bytes": cam_bytes})
-                    st.success(f"✅ 已成功將「{p_name}」加入佐證相簿！")
+                added_count = 0
+                for f in cam_photos:
+                    b = f.getvalue()
+                    h = hashlib.md5(b).hexdigest()
+                    if h not in del_hashes and b not in existing_bytes:
+                        p_name = f.name if f.name else f"佐證照片 #{len(st.session_state['app_buyer_photos']) + 1}"
+                        st.session_state["app_buyer_photos"].append({"name": p_name, "bytes": b})
+                        existing_bytes.append(b)
+                        added_count += 1
+                if added_count > 0:
+                    st.success(f"✅ 已成功將 {added_count} 張照片加入佐證相簿！")
+
         with photo_tabs[1]:
+            st.caption("從電腦硬碟或手機相簿批量選取多張高解析度照片：")
             file_photos = st.file_uploader(
                 "選取相片或損壞照片檔案 (可複選多張檔案)",
                 type=["jpg", "jpeg", "png", "webp", "bmp", "heic", "JPG", "JPEG", "PNG", "WEBP", "HEIC"],
                 accept_multiple_files=True,
-                key="app_buyer_multi_files",
+                key=f"app_buyer_multi_files_{u_ver}",
                 help="可一次選取多張照片，支援 JPG, PNG, WEBP, HEIC 等常見格式"
             )
             if file_photos:
@@ -4168,7 +4185,8 @@ if menu == "📝 提交退換貨申請":
                 added_num = 0
                 for f in file_photos:
                     b = f.getvalue()
-                    if b not in existing_bytes:
+                    h = hashlib.md5(b).hexdigest()
+                    if h not in del_hashes and b not in existing_bytes:
                         st.session_state["app_buyer_photos"].append({"name": f.name, "bytes": b})
                         existing_bytes.append(b)
                         added_num += 1
@@ -4205,12 +4223,17 @@ if menu == "📝 提交退換貨申請":
                 st.markdown("<hr style='margin:4px 0 8px 0; border:none; border-top:1px dashed #64748b;'>", unsafe_allow_html=True)
 
             if del_target_idx is not None:
-                st.session_state["app_buyer_photos"].pop(del_target_idx)
+                removed_item = st.session_state["app_buyer_photos"].pop(del_target_idx)
+                if "app_deleted_photo_hashes" not in st.session_state:
+                    st.session_state["app_deleted_photo_hashes"] = set()
+                st.session_state["app_deleted_photo_hashes"].add(hashlib.md5(removed_item["bytes"]).hexdigest())
                 st.rerun()
 
             if len(cur_photos) > 1:
                 if st.button("🗑️ 全部清空重新選取", key="clear_all_app_buyer_photos"):
                     st.session_state["app_buyer_photos"] = []
+                    st.session_state["app_deleted_photo_hashes"] = set()
+                    st.session_state["buyer_uploader_ver"] = st.session_state.get("buyer_uploader_ver", 0) + 1
                     st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -4358,55 +4381,69 @@ elif menu == "🔍 查詢進度 / 補充照片":
                         supp_key = f"supp_photos_{item['id']}"
                         if supp_key not in st.session_state:
                             st.session_state[supp_key] = []
+                        supp_del_key = f"supp_del_hashes_{item['id']}"
+                        if supp_del_key not in st.session_state:
+                            st.session_state[supp_del_key] = set()
+                        supp_ver_key = f"supp_ver_{item['id']}"
+                        if supp_ver_key not in st.session_state:
+                            st.session_state[supp_ver_key] = 0
+                        supp_u_ver = st.session_state[supp_ver_key]
+                        supp_del_hashes = st.session_state[supp_del_key]
 
-                        supp_tabs = st.tabs(["📷 手機相機直接拍照", "📁 從相簿/檔案選取 (支援多張)"])
+                        supp_tabs = st.tabs(["📷 手機拍照 / 上傳 (支援多張)", "📁 從相簿/檔案選取 (支援多張)"])
                         with supp_tabs[0]:
                             st.markdown(
                                 f'''
-                                <label for="supp_native_{item['id']}" style="
+                                <div style="
                                     display:flex;align-items:center;justify-content:center;gap:10px;
                                     background:linear-gradient(135deg,#2563eb,#4f46e5);
-                                    color:#fff;font-size:15px;font-weight:700;
-                                    padding:12px 24px;border-radius:10px;cursor:pointer;
-                                    box-shadow:0 4px 14px rgba(37,99,235,0.4);
-                                    margin:6px 0;user-select:none;text-align:center;
+                                    color:#fff;font-size:14px;font-weight:700;
+                                    padding:10px 20px;border-radius:10px;
+                                    box-shadow:0 4px 14px rgba(37,99,235,0.3);
+                                    margin:6px 0 10px 0;user-select:none;text-align:center;
                                 ">
-                                    &#128247;&nbsp; 點此開啟手機相機補拍照片
-                                </label>
-                                <input id="supp_native_{item['id']}" type="file" accept="image/*" capture="environment" style="display:none;">
-                                <p style="font-size:12px;color:#94a3b8;margin-top:6px;">
-                                    &#128241; 手機點按鈕則直接開啟相機
+                                    📸 補拍或選取補件照片 (支援多張)
+                                </div>
+                                <p style="font-size:12px;color:#94a3b8;margin-top:-4px;margin-bottom:8px;">
+                                    📱 手機點選可直接開啟相機拍照或自相簿複選多張；電腦端可一次選取多張。
                                 </p>
                                 ''',
                                 unsafe_allow_html=True
                             )
                             supp_cam = st.file_uploader(
-                                "或選取補件照片",
-                                type=["jpg","jpeg","png","webp","heic","JPG","JPEG","PNG"],
-                                key=f"supp_cam_{item['id']}",
-                                label_visibility="collapsed"
+                                "選取或拍攝補件照片 (支援多張)",
+                                type=["jpg","jpeg","png","webp","bmp","heic","JPG","JPEG","PNG","WEBP","HEIC"],
+                                accept_multiple_files=True,
+                                key=f"supp_cam_{item['id']}_{supp_u_ver}",
                             )
-                            if supp_cam is not None:
-                                cam_b = supp_cam.getvalue()
+                            if supp_cam:
                                 ex_b = [p["bytes"] for p in st.session_state[supp_key]]
-                                if cam_b not in ex_b:
-                                    p_name = f"相機補拍 #{len(st.session_state[supp_key]) + 1}"
-                                    st.session_state[supp_key].append({"name": p_name, "bytes": cam_b})
-                                    st.success(f"✅ 已成功將「{p_name}」加入補件相簿！")
+                                add_n = 0
+                                for f in supp_cam:
+                                    cb = f.getvalue()
+                                    h = hashlib.md5(cb).hexdigest()
+                                    if h not in supp_del_hashes and cb not in ex_b:
+                                        p_name = f.name if f.name else f"相機補拍 #{len(st.session_state[supp_key]) + 1}"
+                                        st.session_state[supp_key].append({"name": p_name, "bytes": cb})
+                                        ex_b.append(cb)
+                                        add_n += 1
+                                if add_n > 0:
+                                    st.success(f"✅ 已成功將 {add_n} 張照片加入補件相簿！")
 
                         with supp_tabs[1]:
                             supp_files = st.file_uploader(
                                 "選取照片檔案 (可複選多張檔案)", 
                                 type=["jpg", "jpeg", "png", "webp", "bmp", "heic", "JPG", "JPEG", "PNG", "WEBP", "HEIC"],
                                 accept_multiple_files=True,
-                                key=f"supp_file_{item['id']}"
+                                key=f"supp_file_{item['id']}_{supp_u_ver}"
                             )
                             if supp_files:
                                 ex_b = [p["bytes"] for p in st.session_state[supp_key]]
                                 add_n = 0
                                 for f in supp_files:
                                     b = f.getvalue()
-                                    if b not in ex_b:
+                                    h = hashlib.md5(b).hexdigest()
+                                    if h not in supp_del_hashes and b not in ex_b:
                                         st.session_state[supp_key].append({"name": f.name, "bytes": b})
                                         ex_b.append(b)
                                         add_n += 1
@@ -4426,8 +4463,16 @@ elif menu == "🔍 查詢進度 / 補充照片":
                                     if st.button(f"🗑️ 移除此補件照片 (#{s_i+1})", key=f"del_supp_{item['id']}_{s_i}"):
                                         del_s_idx = s_i
                             if del_s_idx is not None:
-                                st.session_state[supp_key].pop(del_s_idx)
+                                rem = st.session_state[supp_key].pop(del_s_idx)
+                                st.session_state[supp_del_key].add(hashlib.md5(rem["bytes"]).hexdigest())
                                 st.rerun()
+
+                            if len(cur_supp_photos) > 1:
+                                if st.button("🗑️ 全部清空重新選取", key=f"clear_all_supp_{item['id']}"):
+                                    st.session_state[supp_key] = []
+                                    st.session_state[supp_del_key] = set()
+                                    st.session_state[supp_ver_key] = st.session_state[supp_ver_key] + 1
+                                    st.rerun()
 
                         if st.button("🚀 確認送出補件照片", type="primary", key=f"btn_supp_{item['id']}"):
                             if cur_supp_photos:
@@ -4443,6 +4488,8 @@ elif menu == "🔍 查詢進度 / 補充照片":
                                 update_conn.commit()
                                 update_conn.close()
                                 st.session_state[supp_key] = []
+                                st.session_state[supp_del_key] = set()
+                                st.session_state[supp_ver_key] = st.session_state[supp_ver_key] + 1
                                 st.success(f"✅ 共 {len(supp_all_bytes)} 張補件照片已成功上傳！案件已重新提交進行二次審核。")
                                 st.rerun()
                             else:
