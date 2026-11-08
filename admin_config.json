@@ -1,7 +1,7 @@
 {
   "admin_password": "admin888",
   "gemini_api_key": "",
-  "gemini_model_name": "gemini-3.8-flash",
+  "gemini_model_name": "gemini-flash-lite-latest",
   "backend_url": "https://c79p6iaujeyjubfmyygaqj.streamlit.app",
   "custom_key": "custom_value",
   "gemini_api_key_enc": "FggoMxI3FQxEFBA+Lw8oFWY2MiExDAgZR0V/BmU2Ng00Gww8Wjc4"
