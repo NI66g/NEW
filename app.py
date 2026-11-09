@@ -2836,6 +2836,25 @@ def seed_sample_data(cursor):
 
 init_db()
 
+def check_order_id_status(order_id: str):
+    """
+    查詢訂單編號是否已存在於資料庫中，並回傳 (exists: bool, status: str, record_id: int)
+    """
+    clean_id = (order_id or "").strip()
+    if not clean_id:
+        return False, "", None
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute("SELECT id, status FROM return_requests WHERE order_id = ? ORDER BY id DESC LIMIT 1", (clean_id,))
+        row = c.fetchone()
+        conn.close()
+        if row:
+            return True, row[1] or "", row[0]
+        return False, "", None
+    except Exception:
+        return False, "", None
+
 # ==========================================
 # 2. 審核判決郵件發送核心 (寄件信箱: zhuant610@gmail.com)
 # ==========================================
@@ -3421,48 +3440,64 @@ def render_return_verify_dialog_content():
                     reason = vdata.get("reason")
                     photos = st.session_state.get("app_buyer_photos", [])
                     
-                    all_img_bytes = [p["bytes"] for p in photos]
-                    primary_blob, images_json_str = encode_images_to_db(all_img_bytes)
-                    
-                    api_key_to_use = get_persisted_gemini_api_key()
-                    risk_lvl, risk_score, verdict, evidence, rec = analyze_return_request(
-                        category, product_name, reason, all_img_bytes, api_key=api_key_to_use
-                    )
-                    
-                    try:
-                        conn = sqlite3.connect(DB_FILE)
-                        c = conn.cursor()
-                        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        c_user = st.session_state.get("current_user")
-                        c_uname = c_user.get("username", "") if c_user else ""
-                        c.execute("""
-                            INSERT INTO return_requests 
-                            (order_id, customer_email, product_category, product_name, customer_reason, image_data, images_json, status, risk_level, risk_score, ai_verdict, ai_evidence, ai_recommendation, created_at, username)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, '待審核', ?, ?, ?, ?, ?, ?, ?)
-                        """, (order_id, target_email, category, product_name, reason, primary_blob, images_json_str, risk_lvl, risk_score, verdict, evidence, rec, now_str, c_uname))
-                        conn.commit()
-                        conn.close()
+                    # 再次防護檢查訂單編號是否已存在（僅「需補件」狀態允許重複送出並更新）
+                    is_dup, dup_status, existing_record_id = check_order_id_status(order_id)
+                    if is_dup and dup_status != "需補件":
+                        st.error(f"❌ **此訂貨編號已被使用**（目前案件狀態：`{dup_status}`）！除「需補件」狀態外，其餘狀態均不得重複使用並發送申請。")
+                    else:
+                        all_img_bytes = [p["bytes"] for p in photos]
+                        primary_blob, images_json_str = encode_images_to_db(all_img_bytes)
+                        
+                        api_key_to_use = get_persisted_gemini_api_key()
+                        risk_lvl, risk_score, verdict, evidence, rec = analyze_return_request(
+                            category, product_name, reason, all_img_bytes, api_key=api_key_to_use
+                        )
+                        
+                        try:
+                            conn = sqlite3.connect(DB_FILE)
+                            c = conn.cursor()
+                            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            c_user = st.session_state.get("current_user")
+                            c_uname = c_user.get("username", "") if c_user else ""
+                            
+                            if is_dup and dup_status == "需補件":
+                                # 需補件狀態下更新原案件資料並重新進入待審核
+                                c.execute("""
+                                    UPDATE return_requests 
+                                    SET customer_email = ?, product_category = ?, product_name = ?, customer_reason = ?,
+                                        image_data = ?, images_json = ?, status = '待審核', risk_level = ?, risk_score = ?,
+                                        ai_verdict = ?, ai_evidence = ?, ai_recommendation = ?, created_at = ?, username = ?
+                                    WHERE id = ?
+                                """, (target_email, category, product_name, reason, primary_blob, images_json_str, risk_lvl, risk_score, verdict, evidence, rec, now_str, c_uname, existing_record_id))
+                            else:
+                                c.execute("""
+                                    INSERT INTO return_requests 
+                                    (order_id, customer_email, product_category, product_name, customer_reason, image_data, images_json, status, risk_level, risk_score, ai_verdict, ai_evidence, ai_recommendation, created_at, username)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, '待審核', ?, ?, ?, ?, ?, ?, ?)
+                                """, (order_id, target_email, category, product_name, reason, primary_blob, images_json_str, risk_lvl, risk_score, verdict, evidence, rec, now_str, c_uname))
+                            conn.commit()
+                            conn.close()
 
-                        # 清空暫存相片與驗證狀態
-                        st.session_state["app_buyer_photos"] = []
-                        st.session_state["app_deleted_photo_hashes"] = set()
-                        st.session_state["buyer_uploader_ver"] = st.session_state.get("buyer_uploader_ver", 0) + 1
-                        st.session_state["show_return_verify_dialog"] = False
-                        st.session_state["return_verify_code"] = None
-                        st.session_state["return_verify_data"] = None
-                        st.session_state["return_verify_send_status"] = ""
-                        st.session_state["return_submitted_success_order"] = order_id
-                        st.session_state["return_submitted_success_email"] = target_email
-                        
-                        # 重設表單欄位
-                        st.session_state["app_return_order_id"] = ""
-                        st.session_state["app_return_customer_email"] = ""
-                        st.session_state["app_return_product_name"] = ""
-                        st.session_state["app_return_reason"] = ""
-                        
-                        navigate_to("submit", step="success", order=order_id)
-                    except Exception as e:
-                        st.error(f"❌ 申訴資料寫入資料庫失敗：{str(e)}。請聯繫管理員確認後台連線。")
+                            # 清空暫存相片與驗證狀態
+                            st.session_state["app_buyer_photos"] = []
+                            st.session_state["app_deleted_photo_hashes"] = set()
+                            st.session_state["buyer_uploader_ver"] = st.session_state.get("buyer_uploader_ver", 0) + 1
+                            st.session_state["show_return_verify_dialog"] = False
+                            st.session_state["return_verify_code"] = None
+                            st.session_state["return_verify_data"] = None
+                            st.session_state["return_verify_send_status"] = ""
+                            st.session_state["return_submitted_success_order"] = order_id
+                            st.session_state["return_submitted_success_email"] = target_email
+                            
+                            # 重設表單欄位
+                            st.session_state["app_return_order_id"] = ""
+                            st.session_state["app_return_customer_email"] = ""
+                            st.session_state["app_return_product_name"] = ""
+                            st.session_state["app_return_reason"] = ""
+                            
+                            navigate_to("submit", step="success", order=order_id)
+                        except Exception as e:
+                            st.error(f"❌ 申訴資料寫入資料庫失敗：{str(e)}。請聯繫管理員確認後台連線。")
 
     with col_resend:
         if st.button("🔄 重新發送驗證碼", use_container_width=True, key="btn_modal_resend_code"):
@@ -4145,6 +4180,14 @@ if menu == "📝 提交退換貨申請":
             st.session_state["_migrated_placeholder_order_id"] = True
 
         order_id = st.text_input("訂單編號", key="app_return_order_id", placeholder=sample_order_id)
+        typed_order_id = (order_id or "").strip()
+        if typed_order_id:
+            is_dup, dup_status, _ = check_order_id_status(typed_order_id)
+            if is_dup:
+                if dup_status == "需補件":
+                    st.info("ℹ️ 此訂貨編號目前案件狀態為【**需補件**】，允許重新提交補件資料並發送申請。")
+                else:
+                    st.error(f"⚠️ **此訂貨編號已被使用**（目前案件狀態：`{dup_status}`），除「需補件」狀態外，其餘狀態均不得重複使用並發送申請！")
         
         # 聯絡電子信箱：預設為空字串，以 placeholder 顯示提示（包含登入者信箱提示），使用者無須手動刪除即可直接輸入
         default_email = current_user.get("email", "") if current_user else ""
@@ -4305,7 +4348,11 @@ if menu == "📝 提交退換貨申請":
         if not final_email and default_email:
             final_email = default_email
 
-        if not final_order or not final_email or not product_name or not reason:
+        # 嚴格驗證訂單編號是否已存在（除「需補件」狀態外，均不得重複使用並發送申請）
+        is_dup, dup_status, _ = check_order_id_status(final_order)
+        if is_dup and dup_status != "需補件":
+            st.error(f"❌ **此訂貨編號已被使用**（目前案件狀態：`{dup_status}`），除「需補件」狀態外，其餘狀態均不得重複使用並發送申請！")
+        elif not final_order or not final_email or not product_name or not reason:
             st.error("請完整填寫訂單編號、電子信箱、周邊名稱與瑕疵說明！")
         elif "@" not in final_email or "." not in final_email:
             st.error("請填寫正確有效的電子信箱格式（例如：user@example.com）！")
