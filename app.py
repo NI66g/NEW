@@ -4348,13 +4348,8 @@ if menu == "📝 提交退換貨申請":
         st.success(f"🎉 驗證成功！退換貨申請已正式提交！您的案件編號為 **`{succ_order}`**。")
         if succ_email:
             st.info(f"📧 審核結果將寄發至您的電子信箱：**`{succ_email}`**。您亦可隨時在「🔍 查詢進度 / 補充照片」輸入訂單編號追蹤審核狀態。")
-        col_s_act1, col_s_act2 = st.columns([1, 1])
-        with col_s_act1:
-            if st.button("🔍 前往查詢此案件進度", type="primary", use_container_width=True, key="btn_goto_track_succ"):
-                navigate_to("track", step="result", q=succ_order)
-        with col_s_act2:
-            if st.button("📝 再填寫一筆退貨申請", use_container_width=True, key="btn_new_submit_succ"):
-                navigate_to("submit", step="form")
+        if st.button("🔍 前往查詢此案件進度", type="primary", use_container_width=True, key="btn_goto_track_succ"):
+            navigate_to("track", step="result", q=succ_order)
         st.balloons()
 
 # ==========================================
