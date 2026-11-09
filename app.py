@@ -4951,69 +4951,77 @@ elif menu == "🧑‍💼 人機對照審核台":
 
                         # ---------------------------------------------
                         # 人為出錯防護與狀態更正重新裁決區 (已駁回/已通過/需補件 互相變更並發送 Email)
+                        # 直接常駐顯性呈現（不使用任何收折 expander，保證 100% 直覺易見）
                         # ---------------------------------------------
-                        st.markdown("<div style='margin-top: 12px;'></div>", unsafe_allow_html=True)
-                        with st.expander(f"🔄 **案件狀態變更 / 重新裁決（防止審核出錯後悔）** ｜ 目前：【{row['status']}】", expanded=False):
-                            st.info(f"💡 **防呆防誤判機制**：若先前審核出錯或欲重新調整案件處理方式，可於此將【**{row['status']}**】變更為其他狀態。**每次變更完成後，系統皆會自動發送一篇最新審核裁決 Email 通知客戶 ({target_email})**。")
-                            
-                            c_stat = row['status']
-                            
-                            if c_stat == "已駁回":
-                                rev_c1, rev_c2 = st.columns(2)
-                                with rev_c1:
-                                    if st.button("✅ 改為「已通過」 (重新核准退換/維修並發信)", key=f"btn_rev_app_{row['id']}", type="primary", use_container_width=True):
-                                        if dialog_decorator:
-                                            open_approve_modal(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=c_stat)
-                                        else:
-                                            st.session_state["active_approve_id"] = row['id']
-                                            st.session_state["active_dialog_prev_status"] = c_stat
-                                            st.rerun()
-                                with rev_c2:
-                                    if st.button("⚠️ 改為「需補件」 (通知買家補充佐證並發信)", key=f"btn_rev_sup_{row['id']}", use_container_width=True):
-                                        if dialog_decorator:
-                                            open_supplement_modal(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=c_stat)
-                                        else:
-                                            st.session_state["active_supplement_id"] = row['id']
-                                            st.session_state["active_dialog_prev_status"] = c_stat
-                                            st.rerun()
+                        c_stat = row['status']
+                        st.markdown(f"""
+                        <div style="background: rgba(15, 23, 42, 0.7); border: 1.5px solid rgba(56, 189, 248, 0.5); border-left: 6px solid #38bdf8; border-radius: 8px; padding: 12px 16px; margin: 16px 0 10px 0;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <span style="font-weight: 700; color: #38bdf8; font-size: 15px;">🔄 店長重新裁決與狀態更正權限 (防止審核出錯/誤判)</span>
+                                <span style="background: rgba(56, 189, 248, 0.2); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4); padding: 2px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600;">目前狀態：{c_stat}</span>
+                            </div>
+                            <div style="font-size: 13px; color: #cbd5e1; line-height: 1.5;">
+                                若先前審核出錯或欲調整處理方式，<strong>店長可直接點選下方按鈕變更案件狀態</strong>。點擊後將開啟確認與理由填寫視窗，確認送出後<strong>系統將即時更新狀態並自動寄送更正通知 Email 至買家信箱 ({target_email})</strong>。
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
 
-                            elif c_stat == "已通過":
-                                rev_c1, rev_c2 = st.columns(2)
-                                with rev_c1:
-                                    if st.button("⚠️ 改為「需補件」 (要求補齊佐證後再議並發信)", key=f"btn_rev_sup_{row['id']}", use_container_width=True):
-                                        if dialog_decorator:
-                                            open_supplement_modal(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=c_stat)
-                                        else:
-                                            st.session_state["active_supplement_id"] = row['id']
-                                            st.session_state["active_dialog_prev_status"] = c_stat
-                                            st.rerun()
-                                with rev_c2:
-                                    if st.button("🚫 改為「已駁回」 (判定不符保固駁回並發信)", key=f"btn_rev_rej_{row['id']}", type="primary", use_container_width=True):
-                                        if dialog_decorator:
-                                            open_reject_modal(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=c_stat)
-                                        else:
-                                            st.session_state["active_reject_id"] = row['id']
-                                            st.session_state["active_dialog_prev_status"] = c_stat
-                                            st.rerun()
+                        if c_stat == "已駁回":
+                            rev_c1, rev_c2 = st.columns(2)
+                            with rev_c1:
+                                if st.button("✅ 改為「已通過」 (重新核准退換/維修並發信)", key=f"btn_rev_app_{row['id']}", type="primary", use_container_width=True):
+                                    if dialog_decorator:
+                                        open_approve_modal(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=c_stat)
+                                    else:
+                                        st.session_state["active_approve_id"] = row['id']
+                                        st.session_state["active_dialog_prev_status"] = c_stat
+                                        st.rerun()
+                            with rev_c2:
+                                if st.button("⚠️ 改為「需補件」 (開放買家補充佐證並發信)", key=f"btn_rev_sup_{row['id']}", use_container_width=True):
+                                    if dialog_decorator:
+                                        open_supplement_modal(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=c_stat)
+                                    else:
+                                        st.session_state["active_supplement_id"] = row['id']
+                                        st.session_state["active_dialog_prev_status"] = c_stat
+                                        st.rerun()
 
-                            elif c_stat == "需補件":
-                                rev_c1, rev_c2 = st.columns(2)
-                                with rev_c1:
-                                    if st.button("✅ 改為「已通過」 (直接核准退換/維修並發信)", key=f"btn_rev_app_{row['id']}", type="primary", use_container_width=True):
-                                        if dialog_decorator:
-                                            open_approve_modal(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=c_stat)
-                                        else:
-                                            st.session_state["active_approve_id"] = row['id']
-                                            st.session_state["active_dialog_prev_status"] = c_stat
-                                            st.rerun()
-                                with rev_c2:
-                                    if st.button("🚫 改為「已駁回」 (直接駁回申請並發信)", key=f"btn_rev_rej_{row['id']}", type="primary", use_container_width=True):
-                                        if dialog_decorator:
-                                            open_reject_modal(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=c_stat)
-                                        else:
-                                            st.session_state["active_reject_id"] = row['id']
-                                            st.session_state["active_dialog_prev_status"] = c_stat
-                                            st.rerun()
+                        elif c_stat == "已通過":
+                            rev_c1, rev_c2 = st.columns(2)
+                            with rev_c1:
+                                if st.button("⚠️ 改為「需補件」 (開放買家補齊佐證並發信)", key=f"btn_rev_sup_{row['id']}", use_container_width=True):
+                                    if dialog_decorator:
+                                        open_supplement_modal(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=c_stat)
+                                    else:
+                                        st.session_state["active_supplement_id"] = row['id']
+                                        st.session_state["active_dialog_prev_status"] = c_stat
+                                        st.rerun()
+                            with rev_c2:
+                                if st.button("🚫 改為「已駁回」 (判定不符保固更正駁回並發信)", key=f"btn_rev_rej_{row['id']}", type="secondary", use_container_width=True):
+                                    if dialog_decorator:
+                                        open_reject_modal(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=c_stat)
+                                    else:
+                                        st.session_state["active_reject_id"] = row['id']
+                                        st.session_state["active_dialog_prev_status"] = c_stat
+                                        st.rerun()
+
+                        elif c_stat == "需補件":
+                            rev_c1, rev_c2 = st.columns(2)
+                            with rev_c1:
+                                if st.button("✅ 改為「已通過」 (直接核准退換/維修並發信)", key=f"btn_rev_app_{row['id']}", type="primary", use_container_width=True):
+                                    if dialog_decorator:
+                                        open_approve_modal(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=c_stat)
+                                    else:
+                                        st.session_state["active_approve_id"] = row['id']
+                                        st.session_state["active_dialog_prev_status"] = c_stat
+                                        st.rerun()
+                            with rev_c2:
+                                if st.button("🚫 改為「已駁回」 (判定不符保固直接駁回並發信)", key=f"btn_rev_rej_{row['id']}", type="secondary", use_container_width=True):
+                                    if dialog_decorator:
+                                        open_reject_modal(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=c_stat)
+                                    else:
+                                        st.session_state["active_reject_id"] = row['id']
+                                        st.session_state["active_dialog_prev_status"] = c_stat
+                                        st.rerun()
 
                         # 若環境不支援裝飾器對話框時之頁面內表單備援 (已審核案件的狀態變更)
                         if not dialog_decorator:
