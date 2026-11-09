@@ -4013,16 +4013,13 @@ def render_status_management_block(row, target_email):
         </div>
         """, unsafe_allow_html=True)
 
-        qc1, qc2, qc3 = st.columns([1.5, 1.5, 1.2])
+        qc1, qc2 = st.columns(2)
         with qc1:
             if st.button("⏪ 撤銷核准：變回「待審核」", key=f"btn_revert_pending_{row['id']}", type="primary", use_container_width=True):
                 _do_status_update(row, target_email, new_status="待審核", default_comment="店長已撤銷原核准決定，申請單重置為「待審核」，將重新安排複審。")
         with qc2:
             if st.button("🚫 更改判決：直接「駁回申請」", key=f"btn_revert_reject_{row['id']}", type="secondary", use_container_width=True):
                 _do_status_update(row, target_email, new_status="已駁回", default_comment="經專責團隊覆核與檢驗，非屬出廠硬體瑕疵或保固範圍，退換貨申請予以駁回。")
-        with qc3:
-            if st.button("⚠️ 改為「需補件」", key=f"btn_revert_supp_{row['id']}", use_container_width=True):
-                _do_status_update(row, target_email, new_status="需補件", default_comment="經專責審核，請補充清晰瑕疵照片或操作短片以利出廠保固核銷。")
 
     elif cur_stat == "已駁回":
         st.markdown(f"""
@@ -5054,7 +5051,7 @@ elif menu == "🧑‍💼 人機對照審核台":
     cat_options = ["全部周邊"] + PERIPHERAL_CATEGORIES
 
     saved_status = st.query_params.get("status")
-    status_idx = status_options.index(saved_status) if saved_status in status_options else 1
+    status_idx = status_options.index(saved_status) if saved_status in status_options else 0
 
     saved_cat = st.query_params.get("cat")
     cat_idx = cat_options.index(saved_cat) if saved_cat in cat_options else 0
@@ -5096,7 +5093,10 @@ elif menu == "🧑‍💼 人機對照審核台":
             else:
                 pill_html = '<span class="pill-green">🟢 綠燈 ‧ 低風險</span>'
 
-            with st.expander(f"【{row['risk_level']}｜風險分 {row['risk_score']}】{row['product_category']} - 訂單：{row['order_id']} ({row['product_name']}) ｜ 狀態：{row['status']}"):
+            expander_title = f"【{row['risk_level']}｜風險分 {row['risk_score']}】{row['product_category']} - 訂單：{row['order_id']} ({row['product_name']}) ｜ 狀態：{row['status']}"
+            if row['status'] in ("已通過", "已駁回", "需補件"):
+                expander_title += " ↩️ [點開可反悔/變更狀態]"
+            with st.expander(expander_title):
                 left_col, right_col = st.columns([1, 1], gap="large")
 
                 with left_col:
@@ -5209,6 +5209,11 @@ elif menu == "🧑‍💼 人機對照審核台":
                         render_status_management_block(row, target_email)
 
                     else:
+                        # ---------------------------------------------
+                        # 申請單審核狀態管理 (自由切換 / 覆寫反悔 - 置頂醒目顯示)
+                        # ---------------------------------------------
+                        render_status_management_block(row, target_email)
+
                         st.markdown("<div class='manager-review-summary-box'>", unsafe_allow_html=True)
                         st.write(f"**審核結果**：`{row['status']}`")
                         st.write(f"**店家說明**：{row['review_comment'] or '無'}")
@@ -5230,11 +5235,6 @@ elif menu == "🧑‍💼 人機對照審核台":
 
                         st.write(f"**通知紀錄**：已發送判決郵件至 `{target_email}` (寄件者: `{SENDER_EMAIL}`)")
                         st.markdown("</div>", unsafe_allow_html=True)
-
-                        # ---------------------------------------------
-                        # 申請單審核狀態管理 (自由切換 / 覆寫反悔)
-                        # ---------------------------------------------
-                        render_status_management_block(row, target_email)
 
                         # 若為已核准案件，允許店長隨時自訂更新維修進度與日期
                         if row['status'] == "已通過":
