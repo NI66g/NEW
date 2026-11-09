@@ -514,68 +514,227 @@
   <script>
     const DEFAULT_BACKEND_URL = "https://c79p6iaujeyjubfmyygaqj.streamlit.app";
     const STORAGE_KEY = "warranty_copilot_backend_url";
+    const STORAGE_KEY_AUTH = "warranty_copilot_auth_token";
+    const STORAGE_KEY_PAGE = "warranty_copilot_page";
+    const STORAGE_KEY_STEP = "warranty_copilot_step";
+    const STORAGE_KEY_USER = "warranty_copilot_user";
 
-        window.addEventListener("message", function(e) {
-      if (e.data && e.data.type === "open_backend_config") {
+    // 讀取持久化狀態：優先自 URL Query Params 讀取，其次從 localStorage 還原
+    function getPersistedState() {
+      const urlParams = new URLSearchParams(window.location.search);
+
+      // 1. 後端網址
+      let backend = urlParams.get("backend") || localStorage.getItem(STORAGE_KEY) || DEFAULT_BACKEND_URL;
+      backend = backend.trim();
+      if (!backend.startsWith("http://") && !backend.startsWith("https://")) {
+        backend = "https://" + backend;
+      }
+      localStorage.setItem(STORAGE_KEY, backend);
+
+      // 2. 登入憑證 Token (優先從 URL 讀取，其次從 localStorage 讀取)
+      let auth = urlParams.get("auth") || localStorage.getItem(STORAGE_KEY_AUTH) || "";
+      auth = auth.trim();
+
+      // 3. 當前頁面 Slug (支援 Pathname 如 /audit，以及 Query Params ?page=audit，以及 localStorage)
+      const pathSlug = window.location.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
+      const validPages = ["submit", "track", "audit", "bi", "accounts", "settings", "settings_api"];
+      let page = urlParams.get("page") || (validPages.includes(pathSlug) ? pathSlug : "") || localStorage.getItem(STORAGE_KEY_PAGE) || "submit";
+
+      // 4. 操作步驟 Step
+      let step = urlParams.get("step") || localStorage.getItem(STORAGE_KEY_STEP) || "main";
+
+      // 5. 額外參數 (如訂單編號 order, 查詢關鍵字 q)
+      let order = urlParams.get("order") || localStorage.getItem("warranty_copilot_order") || "";
+      let q = urlParams.get("q") || localStorage.getItem("warranty_copilot_q") || "";
+
+      return { backend, auth, page, step, order, q };
+    }
+
+    // 建立 iframe 的目標載入網址，附帶完整登入 Token 與頁面路由狀態
+    function buildIframeUrl(state) {
+      let targetSrc = state.backend;
+      const sep = targetSrc.includes("?") ? "&" : "?";
+      let params = new URLSearchParams();
+      params.set("embed", "true");
+
+      if (state.page) params.set("page", state.page);
+      if (state.step && state.step !== "main") params.set("step", state.step);
+      if (state.auth) params.set("auth", state.auth);
+      if (state.order) params.set("order", state.order);
+      if (state.q) params.set("q", state.q);
+
+      // 傳遞頂層其他額外參數
+      const currentUrlParams = new URLSearchParams(window.location.search);
+      for (const [k, v] of currentUrlParams.entries()) {
+        if (!["backend", "page", "step", "auth", "order", "q", "embed"].includes(k)) {
+          params.set(k, v);
+        }
+      }
+
+      return targetSrc + sep + params.toString();
+    }
+
+    // 同步當前狀態至瀏覽器網址列 (支援上一頁/下一頁歷史紀錄與 Chrome 重新整理 F5)
+    function syncUrlToBrowser(state, push = false) {
+      try {
+        const u = new URL(window.location.href);
+        if (state.page) u.searchParams.set("page", state.page);
+        if (state.step && state.step !== "main") {
+          u.searchParams.set("step", state.step);
+        } else {
+          u.searchParams.delete("step");
+        }
+        if (state.auth) {
+          u.searchParams.set("auth", state.auth);
+        } else {
+          u.searchParams.delete("auth");
+        }
+        if (state.order) {
+          u.searchParams.set("order", state.order);
+        } else {
+          u.searchParams.delete("order");
+        }
+        if (state.q) {
+          u.searchParams.set("q", state.q);
+        } else {
+          u.searchParams.delete("q");
+        }
+
+        const newUrl = u.pathname + (u.searchParams.toString() ? "?" + u.searchParams.toString() : "");
+        if (push) {
+          window.history.pushState({ page: state.page, step: state.step, auth: state.auth }, "", newUrl);
+        } else {
+          window.history.replaceState({ page: state.page, step: state.step, auth: state.auth }, "", newUrl);
+        }
+      } catch (err) {
+        console.warn("syncUrlToBrowser error:", err);
+      }
+    }
+
+    // 監聽來自 Streamlit 的雙向訊息通訊
+    window.addEventListener("message", function(e) {
+      if (!e.data) return;
+      const data = e.data;
+
+      // 1. 接收來自 Streamlit 應用的狀態同步 (登入身分、當前頁面、步驟)
+      if (data.type === "streamlit:sync_state") {
+        if (data.auth) {
+          localStorage.setItem(STORAGE_KEY_AUTH, data.auth);
+        }
+        if (data.page && data.page !== "login") {
+          localStorage.setItem(STORAGE_KEY_PAGE, data.page);
+        }
+        if (data.step) {
+          localStorage.setItem(STORAGE_KEY_STEP, data.step);
+        }
+        if (data.user) {
+          localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(data.user));
+        }
+        if (data.order) {
+          localStorage.setItem("warranty_copilot_order", data.order);
+        } else {
+          localStorage.removeItem("warranty_copilot_order");
+        }
+        if (data.q) {
+          localStorage.setItem("warranty_copilot_q", data.q);
+        } else {
+          localStorage.removeItem("warranty_copilot_q");
+        }
+
+        const currentUrlParams = new URLSearchParams(window.location.search);
+        const prevPage = currentUrlParams.get("page");
+        const prevStep = currentUrlParams.get("step") || "main";
+        const hasChanged = (data.page && data.page !== prevPage) || (data.step && data.step !== prevStep);
+
+        syncUrlToBrowser({
+          page: data.page,
+          step: data.step,
+          auth: data.auth,
+          order: data.order,
+          q: data.q
+        }, hasChanged);
+      }
+      // 2. 接收登出通知
+      else if (data.type === "streamlit:logout") {
+        localStorage.removeItem(STORAGE_KEY_AUTH);
+        localStorage.removeItem(STORAGE_KEY_USER);
+        localStorage.removeItem(STORAGE_KEY_PAGE);
+        localStorage.removeItem(STORAGE_KEY_STEP);
+        localStorage.removeItem("warranty_copilot_order");
+        localStorage.removeItem("warranty_copilot_q");
+        syncUrlToBrowser({ page: "", step: "main", auth: "", order: "", q: "" }, false);
+      }
+      // 3. 設定視窗控制
+      else if (data.type === "open_backend_config") {
         openConfigModal();
-      } else if (e.data && e.data.type === "set_backend") {
-        if (e.data.url) {
-          localStorage.setItem(STORAGE_KEY, e.data.url);
+      }
+      // 4. 設定後端連線
+      else if (data.type === "set_backend") {
+        if (data.url) {
+          localStorage.setItem(STORAGE_KEY, data.url);
           const backendInput = document.getElementById("backend-input");
-          if (backendInput) backendInput.value = e.data.url;
-          let targetSrc = e.data.url;
-          if (!targetSrc.includes("embed=true")) {
-            targetSrc += (targetSrc.includes("?") ? "&" : "?") + "embed=true";
-          }
-          const iframe = document.getElementById("app-frame");
-          if (iframe) iframe.src = targetSrc;
+          if (backendInput) backendInput.value = data.url;
+          initApp();
+        }
+      }
+      // 5. API KEY 儲存
+      else if (data.type === "set_gemini_api_key") {
+        if (data.key) {
+          localStorage.setItem("gemini_api_key", data.key);
+        } else {
+          localStorage.removeItem("gemini_api_key");
+        }
+      }
+    });
+
+    // 瀏覽器上一頁 / 下一頁 (popstate) 支援
+    window.addEventListener("popstate", function(e) {
+      const state = getPersistedState();
+      const iframe = document.getElementById("app-frame");
+      if (iframe) {
+        const targetSrc = buildIframeUrl(state);
+        if (iframe.src !== targetSrc) {
+          iframe.src = targetSrc;
         }
       }
     });
 
     function getBackendUrl() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const queryBackend = urlParams.get("backend");
-      if (queryBackend) {
-        localStorage.setItem(STORAGE_KEY, queryBackend);
-        return queryBackend;
-      }
-      const cached = localStorage.getItem(STORAGE_KEY);
-      if (cached && cached.trim()) {
-        return cached.trim();
-      }
-      return DEFAULT_BACKEND_URL;
+      const state = getPersistedState();
+      return state.backend;
     }
 
     function initApp() {
-      const backendUrl = getBackendUrl();
+      const state = getPersistedState();
       const iframe = document.getElementById("app-frame");
       const extLink = document.getElementById("external-link");
       const backendInput = document.getElementById("backend-input");
 
-      backendInput.value = backendUrl;
-      if (extLink) extLink.href = backendUrl;
+      if (backendInput) backendInput.value = state.backend;
+      if (extLink) extLink.href = state.backend;
 
-      let targetSrc = backendUrl;
-      if (!targetSrc.includes("embed=true")) {
-        targetSrc += (targetSrc.includes("?") ? "&" : "?") + "embed=true";
-      }
-
+      const targetSrc = buildIframeUrl(state);
       iframe.src = targetSrc;
 
+      // 網址列同步
+      syncUrlToBrowser(state, false);
+
       setTimeout(() => {
-        document.getElementById("loading-overlay").classList.add("hidden");
+        const overlay = document.getElementById("loading-overlay");
+        if (overlay) overlay.classList.add("hidden");
       }, 5000);
     }
 
     function onFrameLoaded() {
       setTimeout(() => {
-        document.getElementById("loading-overlay").classList.add("hidden");
+        const overlay = document.getElementById("loading-overlay");
+        if (overlay) overlay.classList.add("hidden");
       }, 400);
     }
 
     function reloadFrame() {
-      document.getElementById("loading-overlay").classList.remove("hidden");
+      const overlay = document.getElementById("loading-overlay");
+      if (overlay) overlay.classList.remove("hidden");
       const iframe = document.getElementById("app-frame");
       iframe.src = iframe.src;
     }
