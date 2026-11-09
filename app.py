@@ -3455,7 +3455,8 @@ def render_return_verify_dialog_content():
                         st.session_state["return_submitted_success_email"] = target_email
                         
                         # 重設表單欄位
-                        st.session_state["app_return_order_id"] = f"ORD-PERI-{datetime.now().strftime('%m%d%H%M')}"
+                        st.session_state["app_return_order_id"] = ""
+                        st.session_state["app_return_customer_email"] = ""
                         st.session_state["app_return_product_name"] = ""
                         st.session_state["app_return_reason"] = ""
                         
@@ -4133,14 +4134,34 @@ if menu == "📝 提交退換貨申請":
     col1, col2 = st.columns([1, 1], gap="large")
     with col1:
         st.markdown("#### 📝 填寫申訴資訊")
+        # 訂單編號：預設為空字串，以 placeholder 顯示範例提示，使用者無須手動刪除即可直接輸入自己的訂單編號
+        sample_order_id = f"例如：ORD-PERI-{datetime.now().strftime('%m%d%H%M')}"
         if "app_return_order_id" not in st.session_state:
-            st.session_state["app_return_order_id"] = f"ORD-PERI-{datetime.now().strftime('%m%d%H%M')}"
-        order_id = st.text_input("訂單編號", key="app_return_order_id")
+            st.session_state["app_return_order_id"] = ""
+        elif not st.session_state.get("_migrated_placeholder_order_id", False):
+            # 僅在初次載入時清除舊版本殘留之自動預填文字，轉為背景提示
+            if str(st.session_state.get("app_return_order_id", "")).startswith("ORD-PERI-"):
+                st.session_state["app_return_order_id"] = ""
+            st.session_state["_migrated_placeholder_order_id"] = True
+
+        order_id = st.text_input("訂單編號", key="app_return_order_id", placeholder=sample_order_id)
         
+        # 聯絡電子信箱：預設為空字串，以 placeholder 顯示提示（包含登入者信箱提示），使用者無須手動刪除即可直接輸入
         default_email = current_user.get("email", "") if current_user else ""
+        sample_email = f"例如：{default_email}" if default_email else "例如：user@example.com"
         if "app_return_customer_email" not in st.session_state:
-            st.session_state["app_return_customer_email"] = default_email
-        customer_email = st.text_input("聯絡電子信箱 (Email) *必填，接收審核判決通知", key="app_return_customer_email", placeholder="例如：user@example.com")
+            st.session_state["app_return_customer_email"] = ""
+        elif not st.session_state.get("_migrated_placeholder_email", False):
+            # 僅在初次載入時清除舊版本殘留之預填信箱，轉為背景提示
+            if st.session_state.get("app_return_customer_email", "") in ["buyer01@gmail.com", default_email]:
+                st.session_state["app_return_customer_email"] = ""
+            st.session_state["_migrated_placeholder_email"] = True
+
+        customer_email = st.text_input(
+            "聯絡電子信箱 (Email) *必填，接收審核判決通知", 
+            key="app_return_customer_email", 
+            placeholder=sample_email
+        )
         category = st.selectbox("周邊商品類別 (僅限電腦周邊)", PERIPHERAL_CATEGORIES, key="app_return_category")
         
         # 依據所選周邊顯示專屬檢驗指引
@@ -4276,9 +4297,17 @@ if menu == "📝 提交退換貨申請":
     submit_btn = st.button("🚀 送出退貨申請 (立即完成初審登記)", type="primary", use_container_width=True)
 
     if submit_btn:
-        if not order_id or not customer_email or not product_name or not reason:
+        final_order = (order_id or "").strip()
+        if not final_order:
+            final_order = f"ORD-PERI-{datetime.now().strftime('%m%d%H%M')}"
+            
+        final_email = (customer_email or "").strip()
+        if not final_email and default_email:
+            final_email = default_email
+
+        if not final_order or not final_email or not product_name or not reason:
             st.error("請完整填寫訂單編號、電子信箱、周邊名稱與瑕疵說明！")
-        elif "@" not in customer_email or "." not in customer_email:
+        elif "@" not in final_email or "." not in final_email:
             st.error("請填寫正確有效的電子信箱格式（例如：user@example.com）！")
         elif not st.session_state.get("app_buyer_photos", []):
             st.error("❌ 申請失敗：為加速出廠保固核銷，系統規定【必須上傳至少一張瑕疵佐證照片】否則不給予受理申請！請使用相機或上方按鈕選取照片後再送出。")
@@ -4288,14 +4317,14 @@ if menu == "📝 提交退換貨申請":
             verify_code = f"{random.randint(100000, 999999)}"
             st.session_state["return_verify_code"] = verify_code
             st.session_state["return_verify_data"] = {
-                "order_id": order_id,
-                "customer_email": customer_email.strip(),
+                "order_id": final_order,
+                "customer_email": final_email,
                 "category": category,
                 "product_name": product_name,
                 "reason": reason,
             }
-            with st.spinner(f"正在生成 6 位數驗證碼並發送至您的信箱 ({customer_email.strip()})..."):
-                ok, msg = send_verification_code_email(customer_email.strip(), verify_code)
+            with st.spinner(f"正在生成 6 位數驗證碼並發送至您的信箱 ({final_email})..."):
+                ok, msg = send_verification_code_email(final_email, verify_code)
                 st.session_state["return_verify_send_status"] = msg
             st.session_state["show_return_verify_dialog"] = True
             navigate_to("submit", step="verify")
