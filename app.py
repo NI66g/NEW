@@ -2526,6 +2526,33 @@ def navigate_to(page_slug: str, step: str = "main", preserve_params: bool = Fals
             del st.query_params[k]
     st.rerun()
 
+def sync_state_to_parent(page_slug: str, step: str = "main", auth_tok: str = "", user_info: dict = None, **extra_params):
+    """
+    將當前 Streamlit 的登入身分、所在頁面與操作步驟，透過 postMessage 同步至外層 Vercel 宿主視窗與 localStorage
+    """
+    try:
+        payload = {
+            "type": "streamlit:sync_state",
+            "page": page_slug or "submit",
+            "step": step or "main",
+            "auth": auth_tok or "",
+            "user": user_info or {},
+            "q": extra_params.get("q", "") or str(st.query_params.get("q", "")),
+            "order": extra_params.get("order", "") or str(st.query_params.get("order", "")),
+        }
+        json_str = json.dumps(payload, ensure_ascii=False)
+        st.components.v1.html(f"""
+        <script>
+        try {{
+            const msg = {json_str};
+            if (window.top && window.top !== window) window.top.postMessage(msg, '*');
+            if (window.parent && window.parent !== window) window.parent.postMessage(msg, '*');
+        }} catch(e) {{}}
+        </script>
+        """, height=0, width=0)
+    except Exception:
+        pass
+
 def hash_password(password: str) -> str:
     """密碼 SHA-256 安全雜湊運算"""
     return hashlib.sha256(password.strip().encode("utf-8")).hexdigest()
@@ -3904,6 +3931,8 @@ current_user = st.session_state.get("current_user")
 
 # 未登入狀態：直接呈現精緻的登入與註冊整合門戶
 if current_user is None:
+    if not st.query_params.get("auth"):
+        sync_state_to_parent(page_slug="submit", step="main", auth_tok="", user_info=None)
     # 主畫面呈現：精緻的登入與註冊整合門戶
     st.markdown("""
     <div class="tech-hero">
@@ -4114,6 +4143,15 @@ with st.container(key="top_navigation_bar"):
             st.session_state["current_user"] = None
             st.session_state["admin_authenticated"] = False
             st.query_params.clear()
+            st.components.v1.html("""
+            <script>
+            try {
+                const msg = { type: 'streamlit:logout' };
+                if (window.top && window.top !== window) window.top.postMessage(msg, '*');
+                if (window.parent && window.parent !== window) window.parent.postMessage(msg, '*');
+            } catch(e) {}
+            </script>
+            """, height=0, width=0)
             st.rerun()
 
 menu = menu_label
@@ -4138,6 +4176,15 @@ st.markdown(f"""
     </div>
 </div>
 """, unsafe_allow_html=True)
+
+# 同步當前登入身分與頁面步驟至外層 Vercel 宿主視窗 (支援 Chrome F5 重新整理與上一頁/下一頁)
+curr_auth_tok = make_auth_token(curr_uname) if curr_uname else ""
+sync_state_to_parent(
+    page_slug=current_page_slug,
+    step=current_step,
+    auth_tok=curr_auth_tok,
+    user_info={"username": curr_uname, "role": current_user.get("role", "user"), "email": curr_email} if isinstance(current_user, dict) else None
+)
 
 if menu == "📝 提交退換貨申請":
     st.markdown("""
