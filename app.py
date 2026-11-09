@@ -3932,100 +3932,161 @@ else:
     def open_backend_config_modal():
         render_backend_config_dialog_content()
 
+def _do_status_update(row, target_email, new_status, custom_comment="", default_comment=""):
+    """執行狀態更新寫入資料庫並自動透過 Gmail SMTP 發送通知信"""
+    prev_status = row['status']
+    now_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # 決定說明文字
+    if custom_comment:
+        final_comment = custom_comment
+    elif default_comment:
+        final_comment = default_comment
+    elif new_status == "已通過":
+        final_comment = row.get('review_comment', '') or "經專責人員覆核，確認符合出廠保固免費維修/退換標準！"
+    elif new_status == "需補件":
+        final_comment = row.get('review_comment', '') or "經專責審核，請補充清晰瑕疵照片或操作短片以利出廠保固核銷。"
+    elif new_status == "已駁回":
+        final_comment = row.get('review_comment', '') or "經專責團隊檢驗非屬出廠硬體瑕疵或保固範圍，退換貨申請予以駁回。"
+    else:  # 待審核
+        final_comment = "店長已撤銷先前審核決定，申請單已重置為「待審核」，將重新安排複審。"
+
+    # 寫入資料庫持久化
+    update_conn = sqlite3.connect(DB_FILE)
+    cur = update_conn.cursor()
+    if new_status == "已通過":
+        cur.execute("""
+            UPDATE return_requests 
+            SET status = ?, review_comment = ?, reviewed_at = ?
+            WHERE id = ?
+        """, (new_status, final_comment, now_time, row['id']))
+    else:
+        # 非已通過狀態，重置維修追蹤欄位
+        cur.execute("""
+            UPDATE return_requests 
+            SET status = ?, review_comment = ?, reviewed_at = ?, repair_date = '', technician_id = '', repair_status = ''
+            WHERE id = ?
+        """, (new_status, final_comment, now_time, row['id']))
+    update_conn.commit()
+    update_conn.close()
+
+    # 自動寄發 Email 通知給客戶
+    with st.spinner(f"正在將狀態更新為【{new_status}】並透過 Gmail SMTP 發送通知信..."):
+        ok, mail_msg = send_status_update_email(
+            customer_email=target_email,
+            order_id=row['order_id'],
+            product_name=row['product_name'],
+            prev_status=prev_status,
+            new_status=new_status,
+            comment=final_comment
+        )
+
+    if ok:
+        st.session_state["status_update_success_msg"] = f"✅ 申請單 {row['order_id']} 狀態已成功更新為【{new_status}】，並成功發送通知信給客戶 ({target_email})！"
+    else:
+        st.session_state["status_update_warning_msg"] = f"⚠️ 狀態已更新為【{new_status}】，但 Email 發送未成功：{mail_msg}"
+
+    st.rerun()
+
 def render_status_management_block(row, target_email):
     """
     管理端申請單狀態自由切換與 Email 通知觸發組件
     包含四種狀態：待審核、需補件、已通過、已駁回
+    提供快捷反悔/改判按鈕 (如：已通過時可一鍵變回待審核或直接駁回)
     提供 st.selectbox 選擇目標狀態，旁邊附帶 st.button("更新審核狀態")
     點擊後同步寫入資料庫，並透過 Gmail SMTP 發送【3C退貨審核通知】通知信
     """
+    cur_stat = row['status']
     st.markdown("---")
-    st.markdown(f"""
-    <div style="background: rgba(15, 23, 42, 0.75); border: 1.5px solid rgba(56, 189, 248, 0.5); border-left: 5px solid #38bdf8; border-radius: 8px; padding: 12px 16px; margin: 14px 0 10px 0;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-            <span style="font-weight: 700; color: #38bdf8; font-size: 15px;">🔄 申請單審核狀態管理 (自由切換 / 覆寫反悔)</span>
-            <span style="background: rgba(56, 189, 248, 0.2); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4); padding: 2px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600;">目前：{row['status']}</span>
-        </div>
-        <div style="font-size: 12.5px; color: #cbd5e1; line-height: 1.5;">
-            管理員可自由將此申請單變更為任意狀態（無單向限制）。選取目標狀態並點擊「<strong>更新審核狀態</strong>」後，將即時寫入資料庫並自動透過 Gmail SMTP 發送通知信至買家信箱 (<code>{target_email}</code>)。
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
 
+    # 1. 針對「已通過」案件之醒目反悔/改判專區 (變回待審核 / 直接駁回)
+    if cur_stat == "已通過":
+        st.markdown(f"""
+        <div style="background: rgba(239, 68, 68, 0.08); border: 1.5px solid rgba(239, 68, 68, 0.45); border-left: 5px solid #ef4444; border-radius: 8px; padding: 12px 16px; margin: 14px 0 10px 0;">
+            <div style="font-weight: 700; color: #f87171; font-size: 15px; display: flex; align-items: center; justify-content: space-between;">
+                <span>↩️ 審核後悔與撤銷改判 (目前：已通過)</span>
+                <span style="background: rgba(34, 197, 94, 0.2); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.4); padding: 2px 8px; border-radius: 9999px; font-size: 11.5px;">允許覆寫 / 反悔</span>
+            </div>
+            <div style="font-size: 13px; color: #cbd5e1; margin-top: 4px; line-height: 1.5;">
+                此案件先前已核准。若審核後悔或欲重新處理，<strong>可點選下方按鈕直接撤銷核准變回「待審核」重新審理，或直接改為「已駁回」</strong>；系統將同步寫入資料庫並自動發送通知信給客戶 (<code>{target_email}</code>)。
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        qc1, qc2, qc3 = st.columns([1.5, 1.5, 1.2])
+        with qc1:
+            if st.button("⏪ 撤銷核准：變回「待審核」", key=f"btn_revert_pending_{row['id']}", type="primary", use_container_width=True):
+                _do_status_update(row, target_email, new_status="待審核", default_comment="店長已撤銷原核准決定，申請單重置為「待審核」，將重新安排複審。")
+        with qc2:
+            if st.button("🚫 更改判決：直接「駁回申請」", key=f"btn_revert_reject_{row['id']}", type="secondary", use_container_width=True):
+                _do_status_update(row, target_email, new_status="已駁回", default_comment="經專責團隊覆核與檢驗，非屬出廠硬體瑕疵或保固範圍，退換貨申請予以駁回。")
+        with qc3:
+            if st.button("⚠️ 改為「需補件」", key=f"btn_revert_supp_{row['id']}", use_container_width=True):
+                _do_status_update(row, target_email, new_status="需補件", default_comment="經專責審核，請補充清晰瑕疵照片或操作短片以利出廠保固核銷。")
+
+    elif cur_stat == "已駁回":
+        st.markdown(f"""
+        <div style="background: rgba(56, 189, 248, 0.08); border: 1.5px solid rgba(56, 189, 248, 0.45); border-left: 5px solid #38bdf8; border-radius: 8px; padding: 12px 16px; margin: 14px 0 10px 0;">
+            <div style="font-weight: 700; color: #38bdf8; font-size: 15px;">↩️ 審核後悔與重新裁決 (目前：已駁回)</div>
+            <div style="font-size: 13px; color: #cbd5e1; margin-top: 4px; line-height: 1.5;">
+                若此駁回案件欲重新受理，可直接點選下方快捷按鈕變回待審核或核准退換：
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        qc1, qc2 = st.columns(2)
+        with qc1:
+            if st.button("⏪ 撤銷駁回：變回「待審核」", key=f"btn_revert_pending_{row['id']}", type="primary", use_container_width=True):
+                _do_status_update(row, target_email, new_status="待審核", default_comment="店長已撤銷原駁回決定，申請單重置為「待審核」重新審理。")
+        with qc2:
+            if st.button("✅ 更改判決：改為「已通過」", key=f"btn_revert_approve_{row['id']}", use_container_width=True):
+                _do_status_update(row, target_email, new_status="已通過", default_comment="經專責人員覆核，確認符合出廠保固免費維修/退換標準！")
+
+    elif cur_stat == "需補件":
+        st.markdown(f"""
+        <div style="background: rgba(245, 158, 11, 0.08); border: 1.5px solid rgba(245, 158, 11, 0.45); border-left: 5px solid #f59e0b; border-radius: 8px; padding: 12px 16px; margin: 14px 0 10px 0;">
+            <div style="font-weight: 700; color: #fbbf24; font-size: 15px;">↩️ 審核狀態變更 (目前：需補件)</div>
+            <div style="font-size: 13px; color: #cbd5e1; margin-top: 4px; line-height: 1.5;">
+                可直接改為通過、駁回，或變回待審核：
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        qc1, qc2, qc3 = st.columns([1.5, 1.5, 1.2])
+        with qc1:
+            if st.button("✅ 直接改為「已通過」", key=f"btn_revert_approve_{row['id']}", type="primary", use_container_width=True):
+                _do_status_update(row, target_email, new_status="已通過", default_comment="經專責人員覆核，確認符合出廠保固免費維修/退換標準！")
+        with qc2:
+            if st.button("🚫 直接改為「已駁回」", key=f"btn_revert_reject_{row['id']}", type="secondary", use_container_width=True):
+                _do_status_update(row, target_email, new_status="已駁回", default_comment="經專責團隊檢驗非屬保固範圍，退換貨申請予以駁回。")
+        with qc3:
+            if st.button("⏪ 變回「待審核」", key=f"btn_revert_pending_{row['id']}", use_container_width=True):
+                _do_status_update(row, target_email, new_status="待審核", default_comment="管理員已重置為待審核狀態。")
+
+    # 2. 通用下拉選單與自訂備註 (支援任意四種狀態互轉)
+    st.markdown("<div style='margin-top: 8px;'></div>", unsafe_allow_html=True)
     status_opts = ["待審核", "需補件", "已通過", "已駁回"]
-    cur_idx = status_opts.index(row['status']) if row['status'] in status_opts else 0
+    cur_idx = status_opts.index(cur_stat) if cur_stat in status_opts else 0
 
     stat_c1, stat_c2 = st.columns([2.5, 1.5])
     with stat_c1:
         sel_target_status = st.selectbox(
-            "選擇目標狀態",
+            "或由此下拉選單選擇目標狀態",
             options=status_opts,
             index=cur_idx,
             key=f"univ_sel_status_{row['id']}"
         )
     with stat_c2:
         st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
-        update_status_btn = st.button("🔄 更新審核狀態", key=f"univ_btn_status_{row['id']}", type="primary", use_container_width=True)
+        update_status_btn = st.button("🔄 更新審核狀態", key=f"univ_btn_status_{row['id']}", type="primary" if cur_stat == "待審核" else "secondary", use_container_width=True)
 
     stat_note = st.text_input(
-        "審核備註 / 說明 (選填，將包含於通知 Email 與案件紀錄)：",
+        "自訂審核備註 / 說明 (選填，將完整呈現於通知 Email 與案件紀錄)：",
         value="",
-        placeholder="例：經專責人員覆核，變更為需補件，請補傳清晰瑕疵照片與操作影片...",
+        placeholder="例：店長覆核撤銷核准，改為駁回；或輸入給客戶的詳細補充指示...",
         key=f"univ_note_status_{row['id']}"
     )
 
     if update_status_btn:
-        prev_status = row['status']
-        new_status = sel_target_status
-        now_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        # 決定說明文字
-        if stat_note.strip():
-            final_comment = stat_note.strip()
-        elif new_status == "已通過":
-            final_comment = row.get('review_comment', '') or "經專責人員覆核，確認符合出廠保固免費維修/退換標準！"
-        elif new_status == "需補件":
-            final_comment = row.get('review_comment', '') or "經專責審核，請補充清晰瑕疵照片或操作短片以利出廠保固核銷。"
-        elif new_status == "已駁回":
-            final_comment = row.get('review_comment', '') or "經專責人員與系統檢驗，本案件未符合出廠瑕疵保固範圍，退換貨申請予以駁回。"
-        else:  # 待審核
-            final_comment = "管理員已將此申請單重置為待審核狀態，將重新安排審查。"
-
-        # 寫入資料庫持久化
-        update_conn = sqlite3.connect(DB_FILE)
-        cur = update_conn.cursor()
-        if new_status == "已通過":
-            cur.execute("""
-                UPDATE return_requests 
-                SET status = ?, review_comment = ?, reviewed_at = ?
-                WHERE id = ?
-            """, (new_status, final_comment, now_time, row['id']))
-        else:
-            cur.execute("""
-                UPDATE return_requests 
-                SET status = ?, review_comment = ?, reviewed_at = ?, repair_date = '', technician_id = '', repair_status = ''
-                WHERE id = ?
-            """, (new_status, final_comment, now_time, row['id']))
-        update_conn.commit()
-        update_conn.close()
-
-        # 自動寄發 Email 通知給客戶
-        with st.spinner("正在將最新狀態同步寫入資料庫，並透過 Gmail SMTP 發送通知信..."):
-            ok, mail_msg = send_status_update_email(
-                customer_email=target_email,
-                order_id=row['order_id'],
-                product_name=row['product_name'],
-                prev_status=prev_status,
-                new_status=new_status,
-                comment=final_comment
-            )
-
-        if ok:
-            st.session_state["status_update_success_msg"] = "狀態已更新，並成功發送通知信給客戶！"
-        else:
-            st.session_state["status_update_warning_msg"] = f"狀態已更新為【{new_status}】，但 Email 發送未成功：{mail_msg}"
-
-        st.rerun()
+        _do_status_update(row, target_email, new_status=sel_target_status, custom_comment=stat_note.strip())
 
 
 # ==========================================
