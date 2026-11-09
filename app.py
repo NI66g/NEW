@@ -3010,6 +3010,123 @@ def send_decision_email(customer_email, order_id, product_name, status, review_c
     except Exception as e:
         return False, f"❌ 郵件發送失敗：{str(e)}"
 
+def send_status_update_email(customer_email, order_id, product_name, prev_status, new_status, comment=""):
+    """
+    管理端變更申請單狀態時，自動透過 Gmail SMTP 發送通知信給客戶
+    信件主旨：【3C退貨審核通知】您的退貨申請單狀態已更新
+    信件內容：包含申請單號、原狀態、更新後最新狀態，以及系統提醒（例如：若為需補件，提醒客戶盡速補件）。
+    """
+    if not customer_email or "@" not in customer_email:
+        return False, "⚠️ 申請人未填寫有效之電子信箱，跳過郵件發送。"
+
+    cfg = load_email_config()
+    sender = cfg.get("sender_email", "zhuant610@gmail.com").strip()
+    app_pwd = cfg.get("app_password", "").strip() or st.session_state.get("gmail_app_password", "").strip() or os.environ.get("GMAIL_APP_PASSWORD", "").strip()
+
+    if not app_pwd:
+        return False, f"⚠️ 尚未設定 Gmail 應用程式密碼！目前無法由 {sender} 發送真實 Email。"
+
+    subject = "【3C退貨審核通知】您的退貨申請單狀態已更新"
+
+    # 針對不同最新狀態給予對應的醒目色彩與系統提醒
+    if new_status == "需補件":
+        status_color = "#d97706"
+        status_bg = "#fef3c7"
+        system_tip = "⚠️ <strong>【系統提醒】</strong>：您的退貨申請單需要補充佐證資料（如商品受損特寫、序號貼紙或操作影片），請您盡速前往系統「進度查詢 / 補充照片」頁面上傳補件，以利專責人員加速審核。"
+    elif new_status == "已通過":
+        status_color = "#16a34a"
+        status_bg = "#dcfce7"
+        system_tip = "🎉 <strong>【系統提醒】</strong>：您的售後退換貨申請已審核通過！請依相關說明妥善包裝故障商品寄回，我們收到後將盡速為您安排後續維修或換發新品/款項退還流程。"
+    elif new_status == "已駁回":
+        status_color = "#dc2626"
+        status_bg = "#fee2e2"
+        system_tip = "🚫 <strong>【系統提醒】</strong>：經專責審核團隊覆核與檢驗，本案件非屬出廠硬體瑕疵或保固範圍，退換貨申請已予以駁回。若您對判決有任何疑義或需自費維修，歡迎直接回覆此郵件與客服聯繫。"
+    else:  # 待審核
+        status_color = "#0284c7"
+        status_bg = "#e0f2fe"
+        system_tip = "⏳ <strong>【系統提醒】</strong>：您的申請單目前已重置為「待審核」狀態，審核專員將重新進行案件資格與佐證複審，請稍候進一步審核通知。"
+
+    comment_display = comment.strip() if comment and comment.strip() else "無特別補充備註"
+
+    html_body = f"""
+    <html>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans TC', sans-serif; background-color: #f8fafc; padding: 24px; margin: 0;">
+        <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;">
+            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 24px 28px; border-bottom: 3px solid #38bdf8;">
+                <h2 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 700;">🛡️ 3C 電腦周邊售後客服中心 · 審核狀態更新通知</h2>
+                <p style="color: #94a3b8; font-size: 13px; margin: 6px 0 0 0;">人機協同爭議風控平台 (HITL System)</p>
+            </div>
+            
+            <div style="padding: 28px;">
+                <p style="font-size: 15px; color: #1e293b; margin-top: 0;">親愛的客戶您好：</p>
+                <p style="font-size: 14px; color: #475569; line-height: 1.6;">
+                    您所提交的售後退換貨申請單，管理端專員已更新最新審核狀態，案件詳細資訊如下：
+                </p>
+                
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 22px; margin: 20px 0;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 10px 0; color: #64748b; width: 32%;">申請單號</td>
+                            <td style="padding: 10px 0; color: #0f172a; font-weight: 700; font-size: 15px;">{order_id}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 10px 0; color: #64748b;">商品名稱</td>
+                            <td style="padding: 10px 0; color: #0f172a; font-weight: 600;">{product_name}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 10px 0; color: #64748b;">原審核狀態</td>
+                            <td style="padding: 10px 0; color: #64748b; text-decoration: line-through;">{prev_status}</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid #e2e8f0; background-color: {status_bg};">
+                            <td style="padding: 12px 8px; color: #334155; font-weight: 700;">更新後最新狀態</td>
+                            <td style="padding: 12px 8px; font-weight: 800; font-size: 16px; color: {status_color};">
+                                {new_status}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px 0; color: #64748b; vertical-align: top;">審核備註 / 說明</td>
+                            <td style="padding: 10px 0; color: #0f172a; white-space: pre-wrap; line-height: 1.6;">{comment_display}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style="background-color: #f8fafc; border-left: 4px solid {status_color}; border-radius: 6px; padding: 14px 16px; margin: 18px 0; font-size: 13.5px; color: #334155; line-height: 1.6;">
+                    {system_tip}
+                </div>
+                
+                <p style="font-size: 13px; color: #64748b; line-height: 1.6; margin-bottom: 0;">
+                    ※ 本郵件由系統自動發送，寄件信箱：<strong>{sender}</strong>。<br>
+                    ※ 若有補傳瑕疵照片/短片之需求，或對審核結果有任何疑問，歡迎直接回覆此郵件聯繫售後客服。
+                </p>
+            </div>
+            
+            <div style="background-color: #f1f5f9; padding: 14px 28px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8;">
+                3C 電腦周邊智慧售後與爭議風控平台 · 感謝您的配合
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = f"3C退貨審核中心 <{sender}>"
+        msg["To"] = customer_email
+        msg.attach(MIMEText(html_body, "html", "utf-8"))
+
+        clean_pwd = app_pwd.replace(" ", "")
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as server:
+            server.login(sender, clean_pwd)
+            server.sendmail(sender, customer_email, msg.as_string())
+        return True, f"已成功由 {sender} 發送通知信至申請人信箱：{customer_email}！"
+    except smtplib.SMTPAuthenticationError:
+        return False, f"❌ Gmail 認證失敗 (535)：帳號 {sender} 或應用程式密碼錯誤。"
+    except smtplib.SMTPConnectError as e:
+        return False, f"❌ 無法連線至 Gmail 伺服器 (smtp.gmail.com:465)：{str(e)}"
+    except Exception as e:
+        return False, f"❌ 郵件發送失敗：{str(e)}"
+
 def send_verification_code_email(customer_email, code):
     """
     於買家提交退換貨申請時，發送 6 位數隨機驗證碼至買家信箱，驗證信箱有效性
@@ -3814,6 +3931,101 @@ else:
 
     def open_backend_config_modal():
         render_backend_config_dialog_content()
+
+def render_status_management_block(row, target_email):
+    """
+    管理端申請單狀態自由切換與 Email 通知觸發組件
+    包含四種狀態：待審核、需補件、已通過、已駁回
+    提供 st.selectbox 選擇目標狀態，旁邊附帶 st.button("更新審核狀態")
+    點擊後同步寫入資料庫，並透過 Gmail SMTP 發送【3C退貨審核通知】通知信
+    """
+    st.markdown("---")
+    st.markdown(f"""
+    <div style="background: rgba(15, 23, 42, 0.75); border: 1.5px solid rgba(56, 189, 248, 0.5); border-left: 5px solid #38bdf8; border-radius: 8px; padding: 12px 16px; margin: 14px 0 10px 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <span style="font-weight: 700; color: #38bdf8; font-size: 15px;">🔄 申請單審核狀態管理 (自由切換 / 覆寫反悔)</span>
+            <span style="background: rgba(56, 189, 248, 0.2); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4); padding: 2px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600;">目前：{row['status']}</span>
+        </div>
+        <div style="font-size: 12.5px; color: #cbd5e1; line-height: 1.5;">
+            管理員可自由將此申請單變更為任意狀態（無單向限制）。選取目標狀態並點擊「<strong>更新審核狀態</strong>」後，將即時寫入資料庫並自動透過 Gmail SMTP 發送通知信至買家信箱 (<code>{target_email}</code>)。
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    status_opts = ["待審核", "需補件", "已通過", "已駁回"]
+    cur_idx = status_opts.index(row['status']) if row['status'] in status_opts else 0
+
+    stat_c1, stat_c2 = st.columns([2.5, 1.5])
+    with stat_c1:
+        sel_target_status = st.selectbox(
+            "選擇目標狀態",
+            options=status_opts,
+            index=cur_idx,
+            key=f"univ_sel_status_{row['id']}"
+        )
+    with stat_c2:
+        st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True)
+        update_status_btn = st.button("🔄 更新審核狀態", key=f"univ_btn_status_{row['id']}", type="primary", use_container_width=True)
+
+    stat_note = st.text_input(
+        "審核備註 / 說明 (選填，將包含於通知 Email 與案件紀錄)：",
+        value="",
+        placeholder="例：經專責人員覆核，變更為需補件，請補傳清晰瑕疵照片與操作影片...",
+        key=f"univ_note_status_{row['id']}"
+    )
+
+    if update_status_btn:
+        prev_status = row['status']
+        new_status = sel_target_status
+        now_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # 決定說明文字
+        if stat_note.strip():
+            final_comment = stat_note.strip()
+        elif new_status == "已通過":
+            final_comment = row.get('review_comment', '') or "經專責人員覆核，確認符合出廠保固免費維修/退換標準！"
+        elif new_status == "需補件":
+            final_comment = row.get('review_comment', '') or "經專責審核，請補充清晰瑕疵照片或操作短片以利出廠保固核銷。"
+        elif new_status == "已駁回":
+            final_comment = row.get('review_comment', '') or "經專責人員與系統檢驗，本案件未符合出廠瑕疵保固範圍，退換貨申請予以駁回。"
+        else:  # 待審核
+            final_comment = "管理員已將此申請單重置為待審核狀態，將重新安排審查。"
+
+        # 寫入資料庫持久化
+        update_conn = sqlite3.connect(DB_FILE)
+        cur = update_conn.cursor()
+        if new_status == "已通過":
+            cur.execute("""
+                UPDATE return_requests 
+                SET status = ?, review_comment = ?, reviewed_at = ?
+                WHERE id = ?
+            """, (new_status, final_comment, now_time, row['id']))
+        else:
+            cur.execute("""
+                UPDATE return_requests 
+                SET status = ?, review_comment = ?, reviewed_at = ?, repair_date = '', technician_id = '', repair_status = ''
+                WHERE id = ?
+            """, (new_status, final_comment, now_time, row['id']))
+        update_conn.commit()
+        update_conn.close()
+
+        # 自動寄發 Email 通知給客戶
+        with st.spinner("正在將最新狀態同步寫入資料庫，並透過 Gmail SMTP 發送通知信..."):
+            ok, mail_msg = send_status_update_email(
+                customer_email=target_email,
+                order_id=row['order_id'],
+                product_name=row['product_name'],
+                prev_status=prev_status,
+                new_status=new_status,
+                comment=final_comment
+            )
+
+        if ok:
+            st.session_state["status_update_success_msg"] = "狀態已更新，並成功發送通知信給客戶！"
+        else:
+            st.session_state["status_update_warning_msg"] = f"狀態已更新為【{new_status}】，但 Email 發送未成功：{mail_msg}"
+
+        st.rerun()
 
 
 # ==========================================
@@ -4750,6 +4962,12 @@ elif menu == "🧑‍💼 人機對照審核台":
         else:
             st.error(f"⚠️ **審核裁決已更新至資料庫，但 Email 發送未成功**！\n\n- 訂單編號：**{n_info['order_id']}** (狀態更新為：`{n_info['status']}`)\n- 收件人信箱：`{n_info['to']}`\n- 寄件帳號：`{SENDER_EMAIL}`\n- 失敗原因：\n{n_info['msg']}\n\n👉 *提示：請前往「⚙️ 系統設定 & API」填寫 Google 帳戶 16 碼應用程式密碼，即可正常發送信件。*")
 
+    # 顯示申請單狀態變更之即時成功或警示訊息
+    if "status_update_success_msg" in st.session_state:
+        st.success(st.session_state.pop("status_update_success_msg"))
+    if "status_update_warning_msg" in st.session_state:
+        st.warning(st.session_state.pop("status_update_warning_msg"))
+
     # 讀取案件
     conn = sqlite3.connect(DB_FILE)
     df = pd.read_sql_query("SELECT * FROM return_requests ORDER BY id DESC", conn)
@@ -4926,6 +5144,9 @@ elif menu == "🧑‍💼 人機對照審核台":
                                 st.markdown("---")
                                 render_reject_dialog_content(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'])
 
+                        # 待審核案件下方亦提供自由切換狀態組件 (允許直接變更或跳過初審流程)
+                        render_status_management_block(row, target_email)
+
                     else:
                         st.markdown("<div class='manager-review-summary-box'>", unsafe_allow_html=True)
                         st.write(f"**審核結果**：`{row['status']}`")
@@ -4950,91 +5171,9 @@ elif menu == "🧑‍💼 人機對照審核台":
                         st.markdown("</div>", unsafe_allow_html=True)
 
                         # ---------------------------------------------
-                        # 人為出錯防護與狀態更正重新裁決區 (已駁回/已通過/需補件 互相變更並發送 Email)
-                        # 直接常駐顯性呈現（不使用任何收折 expander，保證 100% 直覺易見）
+                        # 申請單審核狀態管理 (自由切換 / 覆寫反悔)
                         # ---------------------------------------------
-                        c_stat = row['status']
-                        st.markdown(f"""
-                        <div style="background: rgba(15, 23, 42, 0.7); border: 1.5px solid rgba(56, 189, 248, 0.5); border-left: 6px solid #38bdf8; border-radius: 8px; padding: 12px 16px; margin: 16px 0 10px 0;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                <span style="font-weight: 700; color: #38bdf8; font-size: 15px;">🔄 店長重新裁決與狀態更正權限 (防止審核出錯/誤判)</span>
-                                <span style="background: rgba(56, 189, 248, 0.2); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4); padding: 2px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600;">目前狀態：{c_stat}</span>
-                            </div>
-                            <div style="font-size: 13px; color: #cbd5e1; line-height: 1.5;">
-                                若先前審核出錯或欲調整處理方式，<strong>店長可直接點選下方按鈕變更案件狀態</strong>。點擊後將開啟確認與理由填寫視窗，確認送出後<strong>系統將即時更新狀態並自動寄送更正通知 Email 至買家信箱 ({target_email})</strong>。
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-
-                        if c_stat == "已駁回":
-                            rev_c1, rev_c2 = st.columns(2)
-                            with rev_c1:
-                                if st.button("✅ 改為「已通過」 (重新核准退換/維修並發信)", key=f"btn_rev_app_{row['id']}", type="primary", use_container_width=True):
-                                    if dialog_decorator:
-                                        open_approve_modal(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=c_stat)
-                                    else:
-                                        st.session_state["active_approve_id"] = row['id']
-                                        st.session_state["active_dialog_prev_status"] = c_stat
-                                        st.rerun()
-                            with rev_c2:
-                                if st.button("⚠️ 改為「需補件」 (開放買家補充佐證並發信)", key=f"btn_rev_sup_{row['id']}", use_container_width=True):
-                                    if dialog_decorator:
-                                        open_supplement_modal(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=c_stat)
-                                    else:
-                                        st.session_state["active_supplement_id"] = row['id']
-                                        st.session_state["active_dialog_prev_status"] = c_stat
-                                        st.rerun()
-
-                        elif c_stat == "已通過":
-                            rev_c1, rev_c2 = st.columns(2)
-                            with rev_c1:
-                                if st.button("⚠️ 改為「需補件」 (開放買家補齊佐證並發信)", key=f"btn_rev_sup_{row['id']}", use_container_width=True):
-                                    if dialog_decorator:
-                                        open_supplement_modal(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=c_stat)
-                                    else:
-                                        st.session_state["active_supplement_id"] = row['id']
-                                        st.session_state["active_dialog_prev_status"] = c_stat
-                                        st.rerun()
-                            with rev_c2:
-                                if st.button("🚫 改為「已駁回」 (判定不符保固更正駁回並發信)", key=f"btn_rev_rej_{row['id']}", type="secondary", use_container_width=True):
-                                    if dialog_decorator:
-                                        open_reject_modal(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=c_stat)
-                                    else:
-                                        st.session_state["active_reject_id"] = row['id']
-                                        st.session_state["active_dialog_prev_status"] = c_stat
-                                        st.rerun()
-
-                        elif c_stat == "需補件":
-                            rev_c1, rev_c2 = st.columns(2)
-                            with rev_c1:
-                                if st.button("✅ 改為「已通過」 (直接核准退換/維修並發信)", key=f"btn_rev_app_{row['id']}", type="primary", use_container_width=True):
-                                    if dialog_decorator:
-                                        open_approve_modal(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=c_stat)
-                                    else:
-                                        st.session_state["active_approve_id"] = row['id']
-                                        st.session_state["active_dialog_prev_status"] = c_stat
-                                        st.rerun()
-                            with rev_c2:
-                                if st.button("🚫 改為「已駁回」 (判定不符保固直接駁回並發信)", key=f"btn_rev_rej_{row['id']}", type="secondary", use_container_width=True):
-                                    if dialog_decorator:
-                                        open_reject_modal(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=c_stat)
-                                    else:
-                                        st.session_state["active_reject_id"] = row['id']
-                                        st.session_state["active_dialog_prev_status"] = c_stat
-                                        st.rerun()
-
-                        # 若環境不支援裝飾器對話框時之頁面內表單備援 (已審核案件的狀態變更)
-                        if not dialog_decorator:
-                            prev_st = st.session_state.get("active_dialog_prev_status", "待審核")
-                            if st.session_state.get("active_approve_id") == row['id']:
-                                st.markdown("---")
-                                render_approve_dialog_content(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=prev_st)
-                            elif st.session_state.get("active_supplement_id") == row['id']:
-                                st.markdown("---")
-                                render_supplement_dialog_content(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=prev_st)
-                            elif st.session_state.get("active_reject_id") == row['id']:
-                                st.markdown("---")
-                                render_reject_dialog_content(row['id'], row['order_id'], row['product_name'], target_email, row['ai_verdict'], row['ai_recommendation'], current_status=prev_st)
+                        render_status_management_block(row, target_email)
 
                         # 若為已核准案件，允許店長隨時自訂更新維修進度與日期
                         if row['status'] == "已通過":
